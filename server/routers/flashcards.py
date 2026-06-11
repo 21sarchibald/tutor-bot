@@ -1,3 +1,15 @@
+from fastapi import APIRouter, UploadFile
+from server.services.flashcard_generator import generate_flashcards
+from server.services.text_extraction import extract_text_from_pdf
+ 
+router = APIRouter()
+ 
+@router.post("/flashcards")
+async def flashcard_endpoint(file: UploadFile):
+    text = extract_text_from_pdf(file)
+    flashcards = generate_flashcards(text)
+    return {"flashcards": flashcards}
+
 # Flashcard Manager
 # File: Routers/flashcards.py
 # Description: Code for creating and viewing student academic flashcards
