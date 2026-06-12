@@ -1,15 +1,3 @@
-import os
-from groq import Groq
-
-# Use environment variable for API key; do NOT embed secrets in source.
-API_KEY = os.getenv("GROQ_API_KEY")
-if not API_KEY:
-    raise RuntimeError("Missing GROQ_API_KEY environment variable.")
-
-client = Groq(api_key=API_KEY)
-
-def get_client():
-    return client
 # Project: AI Tutorbot
 # File Description: Accesses the Groq API & operates as a functional chatbot (command line interface only), has conversation management & memory management logic as well. Memory is stored in dedicated json files by conversation & message history is regularly summarized for token preservation
 # Contributor: Ky Papa
