@@ -6,9 +6,23 @@ body{
     width: 100%;
     margin: 0;
 }
+#top{
+    gap: 30px;
+    position:fixed;
+    display: flex;
+    background-color: #ebb8c4;
+    width: 100%;
+}
 #sidebarBtn{
+    position: fixed;
+    top: 50px;
     border: none;
     background-color: transparent;
+    width: 40px;
+}
+#logo{
+    width: inherit;
+    filter: invert(80%) saturate(500%) hue-rotate(270deg);
 }
 #top{
     display: flex;
@@ -17,9 +31,10 @@ body{
     display: none;
 }
 #sidebar{
+    min-width: 120px;
     width: 50%;
     height: 100%;
-    min-width: 200px;
+    max-width: 250px;
     display: flex;
     flex-flow: column;
     z-index: 2;
@@ -50,10 +65,27 @@ a:hover{
 }
 #userPrompt{
     width: 100%;
+    padding: 10px;
+    background-color: #ffffff;
+    border: 2px solid #ebb8c4;
+    border-radius: 20px;
+}
+
+#userPrompt::placeholder {
+    color: #c4c4c4;
+    font-family:'Courier New', Courier, monospace;
+    font-size: 15px;
+}
+#submit{
+    border-style: none;
+    border-radius: 100%;
+    background-color: #ebb8c4;
+    width: 40px;
 }
 #chatRoom{
     display: flex;
     flex-direction: column;
+    margin-bottom: 100px;
 }
 .userPromptDisplay{
     background-color: rgb(221, 160, 194);
@@ -68,4 +100,5 @@ a:hover{
     align-self: self-end;
     display:inline-block;
     overflow-wrap: break-word;
+    margin-right: 10px;
 }
