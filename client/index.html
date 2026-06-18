@@ -10,28 +10,34 @@
 <body>
     <wrapper id="page">
         <div id="top">
-            <button id="sidebarBtn"><img src="images/swee_logo.png" id="logo"></button>
+            <button id="sidebarBtn"><img src="images/swee_logo.png" class="logo"></button>
             <h1>Tutor Bot</h1>
         </div>
 
         <div id="sidebar" hidden>
+            <img src="images/swee_logo.png" class="logo">
+            <button class="close">X</button>
             <a href="#">About Us</a>
             <a href="#">New Chat</a>
             <a href="#">Search Chat</a>
 
             <div id="chat-history">
+                <p><b>Chat History</b></p>
             </div>
         </div>
 
         <section id="chatRoom">
         </section>
 
-        <div id="userinput">
-            <div id="bar">
-            <input type="text" id="userPrompt" name="userPrompt" placeholder="Ask Tutor Bot!">
-            </div>
-            <button id="submit">↥</button>
-        </div>
+            <div id="userinput">
+                <div id="bar">
+                <input type="text" id="userPrompt" name="userPrompt" placeholder="Ask Tutor Bot!" autocomplete="off">
+                </div>
+                <div class="buttons">
+                    <button id="fileupload"><b>十</b></button>
+                    <button id="submit"><b>↥</b></button>
+                </div>
+        </section>
     </wrapper>
 </body>
 </html>
