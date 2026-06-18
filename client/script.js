@@ -3,9 +3,13 @@ const sideBar = document.querySelector("#sidebar");
 const chatRoom = document.querySelector("#chatRoom");
 const userPrompt = document.querySelector("#userPrompt");
 const submitBtn = document.querySelector("#submit");
+const closeBtn = document.querySelector(".close");
 
 sideBtn.addEventListener("click", () => {
    sideBar.hidden = !sideBar.hidden;
+});
+closeBtn.addEventListener('click', ()=>{
+  sideBar.hidden = !sideBar.hidden;
 });
 submitBtn.addEventListener("click",()=>{
    let cleanedInput = userPrompt.value.trim();
