@@ -7,6 +7,13 @@ const userPrompt = document.querySelector("#userPrompt");
 const submitBtn = document.querySelector("#submit");
 const closeBtn = document.querySelector(".close");
 
+sideBtn.addEventListener("click", () => {
+   sideBar.hidden = !sideBar.hidden;
+});
+closeBtn.addEventListener('click', ()=>{
+  sideBar.hidden = !sideBar.hidden;
+});
+submitBtn.addEventListener("click", async ()=>{
 //open and close the
 sideBtn.addEventListener("click", openAndClose);
 closeBtn.addEventListener('click', openAndClose);
@@ -18,7 +25,38 @@ submitBtn.addEventListener("click",()=>{
       chatRoom.innerHTML += `
       <p class="userPromptDisplay">${userPrompt.value}</p>`;
       userPrompt.value = "";
-   }
+
+      const loadingEl = document.createElement("p");
+      loadingEl.textContent = "Tutorbot is thinking...";
+      loadingEl.classList.add("botResponse");
+      chatRoom.appendChild(loadingEl);
+
+      try {
+        const res = await fetch("http://localhost:8000/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            chat_name: "default",
+            message: cleanedInput
+          })
+        });
+    
+        if (!res.ok) {
+          throw new Error("Server error: " + res.status);
+        }
+    
+        const data = await res.json();
+
+        loadingEl.textContent = data.response;
+      } catch (err) {
+        console.error(err);
+        loadingEl.textContent = "Error connecting to server.";
+      }
+
+
+   } 
 });
 
 userPrompt.addEventListener("keypress", (e) => {

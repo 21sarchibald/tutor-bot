@@ -180,6 +180,12 @@ def list_conversations():
             print("-", os.path.splitext(file)[0]) # Make sure the file type isn't displayed, just the name
     print()   
 
+
+# =========================
+# LEGACY CLI (DISABLED FOR FASTAPI)
+# =========================
+'''
+
 def main():
     # Start the bot & load the default conversation
     ensure_conversations_folder()
@@ -285,3 +291,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+'''

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile
-from server.services.flashcard_generator import generate_flashcards
-from server.services.text_extraction import extract_text_from_pdf
+from services.flashcard_generator import generate_flashcards
+from services.text_extraction import extract_text_from_pdf
  
 router = APIRouter()
  
