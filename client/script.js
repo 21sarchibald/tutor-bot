@@ -1,16 +1,17 @@
 const sideBtn = document.querySelector("#sidebarBtn");
 const sideBar = document.querySelector("#sidebar");
 const chatRoom = document.querySelector("#chatRoom");
+const topBar = document.querySelector("#top");
+const userInput = document.querySelector("#userinput");
 const userPrompt = document.querySelector("#userPrompt");
 const submitBtn = document.querySelector("#submit");
 const closeBtn = document.querySelector(".close");
 
-sideBtn.addEventListener("click", () => {
-   sideBar.hidden = !sideBar.hidden;
-});
-closeBtn.addEventListener('click', ()=>{
-  sideBar.hidden = !sideBar.hidden;
-});
+//open and close the
+sideBtn.addEventListener("click", openAndClose);
+closeBtn.addEventListener('click', openAndClose);
+
+//display chat
 submitBtn.addEventListener("click",()=>{
    let cleanedInput = userPrompt.value.trim();
    if (cleanedInput != ""){
@@ -26,6 +27,13 @@ userPrompt.addEventListener("keypress", (e) => {
    }
 });
 
+function openAndClose(){
+  sideBar.hidden = !sideBar.hidden;
+   topBar.classList.toggle("shrink");   
+   chatRoom.classList.toggle("shrink");   
+   userInput.classList.toggle("shrink");
+}
+
 // ===============================
 // DOM ELEMENTS
 // ===============================
@@ -36,12 +44,18 @@ const output = document.getElementById("output");
 // ===============================
 // EVENT LISTENER
 // ===============================
-generateBtn.addEventListener("click", handleUpload);
+if (generateBtn && fileInput && output) {
+  generateBtn.addEventListener("click", handleUpload);
+}
 
 // ===============================
 // MAIN UPLOAD FUNCTION
 // ===============================
 async function handleUpload() {
+  if (!fileInput || !output) {
+    console.error("Upload elements not found.");
+    return;
+  }
   const file = fileInput.files[0];
 
   if (!file) {

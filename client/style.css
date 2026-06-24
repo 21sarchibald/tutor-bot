@@ -44,7 +44,7 @@ body{
     flex-flow: column;
     z-index: 1;
     background-color: rgb(247, 238, 239);
-    padding: 3px 10px;
+    padding: 3px 15px;
 }
 #sidebar .logo{
     padding: 20px 0px 0px 2px;
@@ -87,6 +87,12 @@ a:hover{
     padding: 30px 20px;
     background-color: rgb(252, 215, 221);
     width: auto;
+    padding:15px;
+    margin: 15px;
+    background-color: #ffffff;
+    border: none;
+    border-radius: 30px;
+    box-shadow: 0 0 12px #ebb8c4;
 }
 #bar{
     flex: 1 1 auto;
@@ -96,14 +102,6 @@ a:hover{
     display: flex;
     gap: 10px;
     align-items: center;
-}
-#userinput{
-    padding:15px;
-    background-color: #ffffff;
-    border: none;
-    border-radius: 30px;
-    margin: 15px;
-    box-shadow: 0 0 12px #ebb8c4;
 }
 #userPrompt{
     border: none;
@@ -158,9 +156,32 @@ a:hover{
 }
 @media screen and (min-width:700px) {
     #userinput{
+        margin: 15px 10%;
+    }
+    #chatRoom{
+        margin: 100px 10%;
+    }
+    #top.shrink {
+        margin-left: 250px;
+    }
+    #chatRoom.shrink{
+        margin: 100px auto;
+    }
+    #userinput.shrink{
+        margin: 15px 40px 15px 290px;
+    }
+}
+@media screen and (min-width:1000px) {
+    #userinput{
         margin: 15px 20%;
     }
     #chatRoom{
         margin: 100px 20%;
+    }
+    #chatRoom.shrink{
+        margin: 100px auto;
+    }
+    #userinput.shrink{
+        margin: 15px 100px 15px 350px;
     }
 }
