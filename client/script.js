@@ -7,19 +7,12 @@ const userPrompt = document.querySelector("#userPrompt");
 const submitBtn = document.querySelector("#submit");
 const closeBtn = document.querySelector(".close");
 
-sideBtn.addEventListener("click", () => {
-   sideBar.hidden = !sideBar.hidden;
-});
-closeBtn.addEventListener('click', ()=>{
-  sideBar.hidden = !sideBar.hidden;
-});
-submitBtn.addEventListener("click", async ()=>{
 //open and close the
 sideBtn.addEventListener("click", openAndClose);
 closeBtn.addEventListener('click', openAndClose);
 
 //display chat
-submitBtn.addEventListener("click",()=>{
+submitBtn.addEventListener("click", async ()=>{
    let cleanedInput = userPrompt.value.trim();
    if (cleanedInput != ""){
       chatRoom.innerHTML += `
