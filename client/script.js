@@ -1,3 +1,6 @@
+// ===============================
+// DOM ELEMENTS - CHAT & SIDEBAR
+// ===============================
 const sideBtn = document.querySelector("#sidebarBtn");
 const sideBar = document.querySelector("#sidebar");
 const chatRoom = document.querySelector("#chatRoom");
@@ -7,22 +10,29 @@ const userPrompt = document.querySelector("#userPrompt");
 const submitBtn = document.querySelector("#submit");
 const closeBtn = document.querySelector(".close");
 
-//open and close the
-sideBtn.addEventListener("click", openAndClose);
-closeBtn.addEventListener('click', openAndClose);
+// Toggle sidebar event listeners
+if (sideBtn) sideBtn.addEventListener("click", openAndClose);
+if (closeBtn) closeBtn.addEventListener("click", openAndClose);
 
-//display chat
-submitBtn.addEventListener("click", async ()=>{
-   let cleanedInput = userPrompt.value.trim();
-   if (cleanedInput != ""){
+// ===============================
+// CHAT FUNCTIONALITY
+// ===============================
+if (submitBtn && userPrompt && chatRoom) {
+  submitBtn.addEventListener("click", async () => {
+    let cleanedInput = userPrompt.value.trim();
+    if (cleanedInput !== "") {
+      // Render user prompt
       chatRoom.innerHTML += `
-      <p class="userPromptDisplay">${userPrompt.value}</p>`;
+        <p class="userPromptDisplay">${cleanedInput}</p>`;
       userPrompt.value = "";
+      chatRoom.scrollTop = chatRoom.scrollHeight;
 
+      // Render loading state placeholder
       const loadingEl = document.createElement("p");
       loadingEl.textContent = "Tutorbot is thinking...";
       loadingEl.classList.add("botResponse");
       chatRoom.appendChild(loadingEl);
+      chatRoom.scrollTop = chatRoom.scrollHeight;
 
       try {
         const res = await fetch("http://localhost:8000/chat", {
@@ -35,46 +45,44 @@ submitBtn.addEventListener("click", async ()=>{
             message: cleanedInput
           })
         });
-    
+
         if (!res.ok) {
           throw new Error("Server error: " + res.status);
         }
-    
-        const data = await res.json();
 
-        loadingEl.textContent = data.response;
+        const data = await res.json();
+        loadingEl.textContent = data.response || data.reply || "No response received.";
       } catch (err) {
         console.error(err);
         loadingEl.textContent = "Error connecting to server.";
       }
+      chatRoom.scrollTop = chatRoom.scrollHeight;
+    }
+  });
 
-
-   } 
-});
-
-userPrompt.addEventListener("keypress", (e) => {
-   if (e.key === "Enter") {
+  // Enter Key Listener
+  userPrompt.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
       submitBtn.click();
-   }
-});
+    }
+  });
+}
 
-function openAndClose(){
-  sideBar.hidden = !sideBar.hidden;
-   topBar.classList.toggle("shrink");   
-   chatRoom.classList.toggle("shrink");   
-   userInput.classList.toggle("shrink");
+function openAndClose() {
+  if (sideBar) sideBar.hidden = !sideBar.hidden;
+  if (topBar) topBar.classList.toggle("shrink");
+  if (chatRoom) chatRoom.classList.toggle("shrink");
+  if (userInput) userInput.classList.toggle("shrink");
 }
 
 // ===============================
-// DOM ELEMENTS
+// DOM ELEMENTS - UPLOAD & FLASHCARDS
 // ===============================
 const fileInput = document.getElementById("fileInput");
 const generateBtn = document.getElementById("generateBtn");
 const output = document.getElementById("output");
 
-// ===============================
-// EVENT LISTENER
-// ===============================
+// Bind upload listener
 if (generateBtn && fileInput && output) {
   generateBtn.addEventListener("click", handleUpload);
 }
@@ -111,20 +119,23 @@ async function handleUpload() {
 
     const data = await res.json();
 
-    // The backend returns a string of JSON — we need to parse it
-    let flashcards;
-    try {
-      flashcards = JSON.parse(data.flashcards);
-    } catch (err) {
-      output.textContent = "Error parsing flashcards. Check backend output.";
-      console.error("Parsing error:", err);
-      return;
+    // Safely parse flashcards whether returned as a string or a direct JSON array/object
+    let flashcards = data.flashcards;
+
+    if (typeof flashcards === "string") {
+      try {
+        flashcards = JSON.parse(flashcards);
+      } catch (err) {
+        output.textContent = "Error parsing flashcards JSON string.";
+        console.error("Parsing error:", err);
+        return;
+      }
     }
 
     renderFlashcards(flashcards);
 
   } catch (error) {
-    output.textContent = "Something went wrong. Check console.";
+    output.textContent = "Something went wrong. Check the console for details.";
     console.error(error);
   }
 }
@@ -133,21 +144,48 @@ async function handleUpload() {
 // RENDER FLASHCARDS
 // ===============================
 function renderFlashcards(cards) {
-  if (!Array.isArray(cards)) {
-    output.textContent = "Flashcards format invalid.";
+  if (!Array.isArray(cards) || cards.length === 0) {
+    output.textContent = "No valid flashcards found in response.";
     return;
   }
 
-  output.innerHTML = ""; // clear previous content
+  output.innerHTML = ""; // Clear existing output content
 
-  cards.forEach(card => {
+  cards.forEach((card, index) => {
+    // Standardize keys (Supports both front/back and question/answer)
+    const frontText = card.front || card.question || "No term/question provided.";
+    const backText = card.back || card.answer || "No definition/answer provided.";
+
     const cardEl = document.createElement("div");
     cardEl.classList.add("flashcard");
+    cardEl.style.cursor = "pointer";
+    cardEl.style.margin = "10px 0";
+    cardEl.style.padding = "15px";
+    cardEl.style.border = "1px solid #334155";
+    cardEl.style.borderRadius = "8px";
 
+    // Initial Display (Front side)
     cardEl.innerHTML = `
-      <h3>Q: ${card.question}</h3>
-      <p><strong>A:</strong> ${card.answer}</p>
+      <p style="font-size:0.8rem; opacity:0.7;">Card ${index + 1} (Click to flip)</p>
+      <h3>${frontText}</h3>
     `;
+
+    // Interactive Flip Effect
+    let isFlipped = false;
+    cardEl.addEventListener("click", () => {
+      isFlipped = !isFlipped;
+      if (isFlipped) {
+        cardEl.innerHTML = `
+          <p style="font-size:0.8rem; opacity:0.7;">Card ${index + 1} (Back)</p>
+          <p><strong>Answer:</strong> ${backText}</p>
+        `;
+      } else {
+        cardEl.innerHTML = `
+          <p style="font-size:0.8rem; opacity:0.7;">Card ${index + 1} (Front)</p>
+          <h3>${frontText}</h3>
+        `;
+      }
+    });
 
     output.appendChild(cardEl);
   });
