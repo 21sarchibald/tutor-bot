@@ -4,5 +4,6 @@ uvicorn
 pypdf
 python-docx
 groq
+python-dotenv
 pydantic
 pytest

@@ -4,8 +4,11 @@ Description: Passes reading text into Groq cloud AI models and reads the reply.
 """
 
 import json
-# Import our root Groq connector query method
-from services.groq_client import query_groq_ai
+
+try:
+    from .groq_client import query_groq_ai
+except ImportError:
+    from groq_client import query_groq_ai
 
 def generate_flashcards(text):
     """

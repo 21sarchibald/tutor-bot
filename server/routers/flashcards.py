@@ -1,9 +1,15 @@
 from fastapi import APIRouter, UploadFile
-from services.flashcard_generator import generate_flashcards
-from services.text_extraction import extract_text_from_pdf
- 
+
+try:
+    from ..services.flashcard_generator import generate_flashcards
+    from ..services.text_extraction import extract_text_from_pdf
+except ImportError:
+    from services.flashcard_generator import generate_flashcards
+    from services.text_extraction import extract_text_from_pdf
+
 router = APIRouter()
- 
+
+
 @router.post("/flashcards")
 async def flashcard_endpoint(file: UploadFile):
     text = extract_text_from_pdf(file)
@@ -14,8 +20,11 @@ async def flashcard_endpoint(file: UploadFile):
 # File: Routers/flashcards.py
 # Description: Code for creating and viewing student academic flashcards
 
+try:
+    import streamlit as st
+except ImportError:  # pragma: no cover - optional dependency for local UI
+    st = None
 
-import streamlit as st
 
 def show_flashcards_interface():
 

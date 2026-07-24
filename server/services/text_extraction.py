@@ -4,9 +4,18 @@ Description: Extracts raw text out of multiple university document file extensio
 """
 
 import io
-from pypdf import PdfReader
-from docx import Document
+
 from fastapi import UploadFile
+
+try:
+    from pypdf import PdfReader
+except ImportError:  # pragma: no cover - optional dependency handling
+    PdfReader = None
+
+try:
+    from docx import Document
+except ImportError:  # pragma: no cover - optional dependency handling
+    Document = None
 
 class TextExtractionService:
     """
@@ -46,6 +55,9 @@ class TextExtractionService:
     @staticmethod
     def _extract_from_pdf(file_bytes: bytes):
         """Helper tool parsing characters out of standard Portable Document Format streams."""
+        if PdfReader is None:
+            return "Error: pypdf is not installed."
+
         text = ""
         # Transform raw binary numbers into a virtual, readable in-memory file instance
         pdf_stream = io.BytesIO(file_bytes)
@@ -61,6 +73,9 @@ class TextExtractionService:
     @staticmethod
     def _extract_from_docx(file_bytes: bytes):
         """Helper tool parsing sentences out of standard Microsoft Office files."""
+        if Document is None:
+            return "Error: python-docx is not installed."
+
         text = ""
         docx_stream = io.BytesIO(file_bytes)
         doc = Document(docx_stream)
@@ -75,3 +90,8 @@ class TextExtractionService:
     def _extract_from_txt(file_bytes: bytes):
         """Helper tool converting basic text files into standard unicode strings."""
         return file_bytes.decode("utf-8")
+
+
+def extract_text_from_pdf(file: UploadFile) -> str:
+    """Compatibility wrapper for the router and existing callers."""
+    return TextExtractionService.extract_text(file)
