@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,37 +8,71 @@
     <script src="script.js" defer></script>
     <link href="style.css" rel="stylesheet">
 </head>
+
 <body>
     <wrapper id="page">
+        <!-- TOP HEADER BAR -->
         <div id="top">
-            <button id="sidebarBtn"><img src="images/swee_logo.png" class="logo"></button>
-            <h1>Tutor Bot</h1>
+            <button id="sidebarBtn"><img src="images/swee_logo.png" class="logo" alt="Logo"></button>
+            <h1 id="headerTitle">Tutor Bot</h1>
         </div>
 
+        <!-- SIDEBAR NAVIGATION -->
         <div id="sidebar" hidden>
-            <img src="images/swee_logo.png" class="logo">
-            <button class="close">X</button>
-            <a href="#">About Us</a>
-            <a href="#">New Chat</a>
-            <a href="#">Search Chat</a>
+            <div class="sidebar-header">
+                <img src="images/swee_logo.png" class="logo" alt="Logo">
+                <button class="close">X</button>
+            </div>
+
+            <nav class="nav-links">
+                <a href="#" class="nav-link active" data-tab="chatSection">💬 Chat</a>
+                <a href="#" class="nav-link" data-tab="flashcardsSection">🗂️ Flashcards</a>
+                <a href="#" class="nav-link" data-tab="aboutSection">ℹ️ About Us</a>
+            </nav>
 
             <div id="chat-history">
                 <p><b>Chat History</b></p>
+                <div id="historyList"></div>
             </div>
         </div>
 
-        <section id="chatRoom">
-        </section>
+        <!-- MAIN CONTENT CONTAINER -->
+        <main id="mainContent">
+            <!-- 1. AI CHAT SECTION -->
+            <section id="chatSection" class="content-section active">
+                <div id="chatRoom"></div>
 
-        <div id="userinput">
-            <div id="bar">
-                <input type="text" id="userPrompt" name="userPrompt" placeholder="Ask Tutor Bot!" autocomplete="off">
-            </div>
-            <div class="buttons">
-                <button id="fileupload"><b>＋</b></button>
-                <button id="submit"><b>↥</b></button>
-            </div>
-        </div>
+                <div id="userinput">
+                    <div id="bar">
+                        <input type="text" id="userPrompt" name="userPrompt" placeholder="Ask Tutor Bot!"
+                            autocomplete="off">
+                    </div>
+                    <div class="buttons">
+                        <!-- Hidden File Input for Document Upload -->
+                        <input type="file" id="fileInput" accept=".pdf,.docx,.txt" style="display: none;">
+                        <button id="fileupload" title="Upload Document"><b>＋</b></button>
+                        <button id="submit" title="Send Message"><b>↥</b></button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. FLASHCARDS SECTION -->
+            <section id="flashcardsSection" class="content-section" hidden>
+                <h2>Generated Flashcards</h2>
+                <div id="output">
+                    <p style="opacity: 0.7;">Upload a document using the <b>＋</b> button in Chat to generate flashcards!
+                    </p>
+                </div>
+            </section>
+
+            <!-- 3. ABOUT US SECTION -->
+            <section id="aboutSection" class="content-section" hidden>
+                <h2>About AI Tutor Bot</h2>
+                <p>AI Tutor Bot helps students process dense lecture notes, textbooks, and reading materials into
+                    interactive chat sessions and auto-generated study flashcards.</p>
+            </section>
+        </main>
     </wrapper>
 </body>
+
 </html>
