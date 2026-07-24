@@ -1,0 +1,8 @@
+streamlit
+fastapi
+uvicorn
+pypdf
+python-docx
+groq
+pydantic
+pytest
