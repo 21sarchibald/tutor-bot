@@ -5,7 +5,7 @@ Studyspace turns the familiar tutor-bot project into a focused study workspace. 
 ## Features
 
 - AI tutoring conversations with saved session history
-- Flashcard generation from PDF, DOCX, and TXT uploads
+- Study note and flashcard generation from PDF, DOCX, and TXT uploads
 - Click-to-reveal flashcards with deck navigation
 - Responsive chat, flashcard, and about views
 - FastAPI backend with a lightweight, dependency-free JavaScript frontend
@@ -14,7 +14,7 @@ Studyspace turns the familiar tutor-bot project into a focused study workspace. 
 
 ### 1. Configure the AI service
 
-Set the Groq API key expected by `server/services/groq_client.py` in `server/.env`:
+Set the Groq API key expected by `server/services/groq_client.py` in the ignored local file `server/.env.local`:
 
 ```env
 GROQ_API_KEY=your-groq-api-key
@@ -32,7 +32,7 @@ pip install -r requirements.txt
 uvicorn main:app --reload --port 8080
 ```
 
-The API is available at `http://localhost:8080`. Its interactive API documentation is at `http://localhost:8080/docs`.
+The API is available at `http://localhost:8080`. Its interactive API documentation is at `http://localhost:8080/docs`. Keep the API running while using the frontend; the AI chat and study material generation also require a valid Groq API key in `server/.env`.
 
 ### 3. Serve the frontend
 
@@ -63,7 +63,7 @@ server/                 FastAPI application and AI/document services
 | `POST` | `/chat` | Send a message to a named tutor conversation |
 | `GET` | `/conversations` | List saved conversation sessions |
 | `GET` | `/conversations/{chat_name}` | Load a conversation and its messages |
-| `POST` | `/flashcards` | Extract study material and generate flashcards |
+| `POST` | `/flashcards` | Extract study material and generate flashcards (`study_mode=cards`) or notes (`study_mode=notes`) |
 
 ## Tech stack
 

@@ -1,6 +1,8 @@
 /** Render a small, reusable chat view into the supplied container. */
 export function renderChatUI(container) {
-  const apiBase = `${window.location.protocol}//${window.location.hostname || "127.0.0.1"}:8080`;
+  const apiBase = window.location.protocol === "http:" || window.location.protocol === "https:"
+    ? `${window.location.protocol}//${window.location.hostname || "127.0.0.1"}:8080`
+    : "http://127.0.0.1:8080";
   const layout = document.createElement("section");
   layout.className = "component-chat";
 

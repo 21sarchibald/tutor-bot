@@ -9,8 +9,9 @@ from groq import Groq
 
 SERVER_DIR = Path(__file__).resolve().parent.parent
 
-# Force dotenv to overwrite stale system environment variables with server/.env values
-load_dotenv(dotenv_path=SERVER_DIR / ".env", override=True)
+# Keep credentials in the ignored local file; the tracked .env can hold defaults.
+load_dotenv(dotenv_path=SERVER_DIR / ".env", override=False)
+load_dotenv(dotenv_path=SERVER_DIR / ".env.local", override=True)
 
 SUMMARY_TRIGGER = 5
 DEFAULT_CHAT = "default"
@@ -26,6 +27,18 @@ def get_client() -> Groq:
     if client is None:
         raise RuntimeError("The AI service is not configured. Add GROQ_API_KEY to server/.env and restart the server.")
     return client
+
+
+def describe_groq_error(error: Exception) -> str:
+    """Translate common provider failures into actionable, non-secret guidance."""
+    status_code = getattr(error, "status_code", None)
+    if status_code == 401:
+        return "Groq rejected GROQ_API_KEY (HTTP 401). Replace it with a valid key in server/.env, then restart the API."
+    if status_code == 404:
+        return f"Groq could not find model '{MODEL_NAME}'. Set GROQ_MODEL to an available model in server/.env, then restart the API."
+    if status_code == 429:
+        return "Groq rate limit or quota was reached. Check your Groq account limits and try again later."
+    return "The AI service could not complete the request. Check the API key, model, and network connection."
 
 
 def query_groq_ai(prompt: str, *, response_format: dict | None = None, system_prompt: str = "You are a helpful academic tutor.") -> str:
@@ -48,7 +61,7 @@ def query_groq_ai(prompt: str, *, response_format: dict | None = None, system_pr
         return content
     except Exception as exc:
         logger.exception("Groq request failed")
-        raise RuntimeError("The AI service could not complete the request. Check the API key, model, and network connection.") from exc
+        raise RuntimeError(describe_groq_error(exc)) from exc
 
 
 def ensure_conversations_folder():
@@ -233,7 +246,7 @@ def process_chat_message(chat_name: str, user_input: str) -> str:
             raise RuntimeError("The AI service returned an empty response.")
     except Exception as error:
         logger.exception("Tutor response generation failed")
-        raise RuntimeError("The tutor could not generate a reply. Check the API key, model, and network connection.") from error
+        raise RuntimeError(describe_groq_error(error)) from error
 
     # Save bot response
     messages.append({"role": "assistant", "content": bot_response})

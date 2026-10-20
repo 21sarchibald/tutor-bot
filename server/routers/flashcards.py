@@ -3,13 +3,13 @@
 import logging
 from pathlib import Path
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 try:
-    from ..services.flashcard_generator import generate_flashcards
+    from ..services.flashcard_generator import generate_flashcards, generate_study_notes
     from ..services.text_extraction import extract_text_from_pdf
 except ImportError:
-    from services.flashcard_generator import generate_flashcards
+    from services.flashcard_generator import generate_flashcards, generate_study_notes
     from services.text_extraction import extract_text_from_pdf
 
 router = APIRouter()
@@ -19,8 +19,10 @@ SUPPORTED_SUFFIXES = {".pdf", ".docx", ".txt"}
 
 
 @router.post("/flashcards")
-def flashcard_endpoint(file: UploadFile = File(...)):
-    """Extract text from an uploaded document and return generated study cards."""
+def flashcard_endpoint(file: UploadFile = File(...), study_mode: str = Form("cards")):
+    """Extract text from an uploaded document and return cards or concise study notes."""
+    if study_mode not in {"cards", "notes"}:
+        raise HTTPException(status_code=400, detail="Choose either flashcards or study notes.")
     suffix = Path(file.filename or "").suffix.lower()
     if suffix not in SUPPORTED_SUFFIXES:
         raise HTTPException(status_code=415, detail="Upload a PDF, DOCX, or TXT file.")
@@ -40,6 +42,11 @@ def flashcard_endpoint(file: UploadFile = File(...)):
             raise HTTPException(status_code=422, detail=detail)
         if not text.strip():
             raise HTTPException(status_code=422, detail="No readable text was found. Try a text based PDF, DOCX, or TXT file.")
+        if study_mode == "notes":
+            notes = generate_study_notes(text)
+            if not notes.strip():
+                raise HTTPException(status_code=422, detail="No study notes could be generated from this document.")
+            return {"notes": notes}
         cards = generate_flashcards(text)
     except HTTPException:
         raise

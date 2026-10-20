@@ -1,4 +1,8 @@
-const API_BASE = `${window.location.protocol}//${window.location.hostname || "127.0.0.1"}:8080`;
+// `file://` pages have no hostname and cannot form a valid API URL. Keep the
+// documented local-server workflow usable even when index.html is opened directly.
+const API_BASE = window.location.protocol === "http:" || window.location.protocol === "https:"
+  ? `${window.location.protocol}//${window.location.hostname || "127.0.0.1"}:8080`
+  : "http://127.0.0.1:8080";
 const sideBar = document.querySelector("#sidebar");
 const sideBtn = document.querySelector("#sidebarBtn");
 const scrim = document.querySelector("#sidebarScrim");
@@ -21,6 +25,8 @@ let currentChatName = "default";
 let selectedFile = null;
 let flashcards = [];
 let activeCardIndex = 0;
+let studyMode = "cards";
+let studyNotes = "";
 let toastTimer;
 
 function showToast(message) {
@@ -180,8 +186,11 @@ async function sendMessage(message = userPrompt.value.trim()) {
     await refreshHistory();
   } catch (error) {
     pending.row.classList.remove("pending");
-    pending.content.textContent = `I couldn’t reach your tutor. ${error.message || "Check that the server is running, then try again."}`;
-    showToast("Message wasn’t sent. Check that the tutor server is running.");
+    const apiUnavailable = error instanceof TypeError;
+    pending.content.textContent = apiUnavailable
+      ? "I can’t reach the Studyspace API at 127.0.0.1:8080. Start the backend from the server folder, then send your message again."
+      : `I couldn’t reach your tutor. ${error.message || "Check that the server is running, then try again."}`;
+    showToast(apiUnavailable ? "Studyspace API isn’t running. Start the backend, then try again." : `Message wasn’t sent. ${error.message || "Try again."}`);
   } finally {
     submitBtn.disabled = false;
     userPrompt.focus();
@@ -221,6 +230,16 @@ function setSelectedFile(file) {
 document.querySelector("#fileupload").addEventListener("click", () => fileInput.click());
 document.querySelector("#flashcardUploadBtn").addEventListener("click", () => fileInput.click());
 document.querySelector("#emptyUploadBtn").addEventListener("click", () => fileInput.click());
+document.querySelectorAll("[data-study-mode]").forEach((button) => {
+  button.addEventListener("click", () => {
+    studyMode = button.dataset.studyMode;
+    document.querySelectorAll("[data-study-mode]").forEach((item) => {
+      const active = item === button;
+      item.classList.toggle("active", active);
+      item.setAttribute("aria-pressed", String(active));
+    });
+  });
+});
 document.querySelector("#removeUpload").addEventListener("click", () => {
   setSelectedFile(null);
   fileInput.value = "";
@@ -258,10 +277,18 @@ async function generateFlashcards(file) {
   output.append(loading);
   const formData = new FormData();
   formData.append("file", file);
+  formData.append("study_mode", studyMode);
   try {
     const response = await fetch(`${API_BASE}/flashcards`, { method: "POST", body: formData });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.detail || `Server error (${response.status}).`);
+    if (studyMode === "notes") {
+      studyNotes = String(data.notes || "").trim();
+      if (!studyNotes) throw new Error("No study notes could be generated from this document.");
+      renderStudyNotes();
+      showToast("Your study notes are ready.");
+      return;
+    }
     flashcards = normalizeFlashcards(data.flashcards);
     activeCardIndex = 0;
     if (!flashcards.length) throw new Error("No cards were generated. Try a text based PDF or a shorter document.");
@@ -276,7 +303,9 @@ async function generateFlashcards(file) {
     const title = document.createElement("strong");
     title.textContent = "We couldn’t make this deck yet.";
     const detail = document.createElement("p");
-    detail.textContent = error.message || "Check that the tutor server is running, then try again.";
+    detail.textContent = error instanceof TypeError
+      ? "Can’t connect to the Studyspace API at 127.0.0.1:8080. Start the backend from the server folder, then try again."
+      : error.message || "Check that the tutor server is running, then try again.";
     const retry = document.createElement("button");
     retry.className = "text-button";
     retry.type = "button";
@@ -284,12 +313,33 @@ async function generateFlashcards(file) {
     retry.addEventListener("click", () => fileInput.click());
     empty.append(icon, title, detail, retry);
     output.append(empty);
-    showToast("Flashcards weren’t generated. Check the file and try again.");
+    showToast(error instanceof TypeError
+      ? "Studyspace API isn’t running. Start the backend, then upload again."
+      : `Flashcards weren’t generated. ${error.message || "Try again."}`);
   }
+}
+
+function renderStudyNotes() {
+  output.replaceChildren();
+  document.querySelector(".deck-toolbar h2").firstChild.textContent = "Study notes ";
+  document.querySelector("#deckTotal").textContent = "(notes)";
+  document.querySelector("#flashcardCount").textContent = "Notes";
+  document.querySelector("#deckControls").hidden = true;
+  document.querySelector("#flipHint").hidden = true;
+  const article = document.createElement("article");
+  article.className = "study-notes";
+  const heading = document.createElement("h2");
+  heading.textContent = "Study notes";
+  const body = document.createElement("div");
+  body.className = "study-notes-content";
+  body.textContent = studyNotes;
+  article.append(heading, body);
+  output.append(article);
 }
 
 function renderFlashcards() {
   output.replaceChildren();
+  document.querySelector(".deck-toolbar h2").firstChild.textContent = "Study cards ";
   document.querySelector("#deckTotal").textContent = `(${flashcards.length})`;
   document.querySelector("#flashcardCount").textContent = String(flashcards.length);
   document.querySelector("#deckControls").hidden = flashcards.length < 2;
