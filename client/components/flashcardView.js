@@ -1,82 +1,72 @@
-/**
- * Component: FlashcardView
- * Uploads document files to the FastAPI server and renders interactive flashcards.
- */
+/** Render a self contained document upload and flashcard study view. */
 export function renderFlashcardView(container) {
-    container.innerHTML = `
-    <div style="margin-bottom: 2rem;">
-      <h3>Upload File (.pdf, .docx, .txt)</h3>
-      <input type="file" id="file-input" accept=".pdf,.docx,.txt" />
-      <button id="upload-btn" style="padding:0.5rem 1rem; background:#3b82f6; color:white; border:none; border-radius:6px; cursor:pointer;">Generate Flashcards</button>
-    </div>
-    <div id="deck-area" class="flashcard-deck"></div>
-  `;
+  const apiBase = `${window.location.protocol}//${window.location.hostname || "127.0.0.1"}:8080`;
+  const view = document.createElement("section");
+  view.className = "component-flashcards";
+  const fileInput = document.createElement("input");
+  fileInput.type = "file";
+  fileInput.accept = ".pdf,.docx,.txt";
+  fileInput.hidden = true;
+  const uploadButton = document.createElement("button");
+  uploadButton.className = "primary-button";
+  uploadButton.type = "button";
+  uploadButton.textContent = "Choose a file";
+  const status = document.createElement("p");
+  status.className = "section-description";
+  status.setAttribute("role", "status");
+  const deck = document.createElement("div");
+  deck.className = "flashcard-grid";
+  view.append(fileInput, uploadButton, status, deck);
+  container.replaceChildren(view);
+  uploadButton.addEventListener("click", () => fileInput.click());
 
-    const uploadBtn = container.querySelector("#upload-btn");
-    const fileInput = container.querySelector("#file-input");
-    const deckArea = container.querySelector("#deck-area");
+  fileInput.addEventListener("change", async () => {
+    const file = fileInput.files?.[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append("file", file);
+    uploadButton.disabled = true;
+    status.textContent = `Reading ${file.name} and making your flashcards…`;
+    deck.replaceChildren();
 
-    uploadBtn.addEventListener("click", async () => {
-        const file = fileInput.files[0];
-        if (!file) return alert("Please select a file first.");
-
-        const formData = new FormData();
-        formData.append("file", file);
-
-        deckArea.innerHTML = "<p>Processing document and generating flashcards...</p>";
-
-        try {
-            const response = await fetch("http://127.0.0.1:8000/flashcards", {
-                method: "POST",
-                body: formData
-            });
-            const data = await response.json();
-
-            if (data.flashcards && data.flashcards.length > 0) {
-                renderDeck(data.flashcards, deckArea);
-            } else {
-                deckArea.innerHTML = "<p>No flashcards could be generated from this document.</p>";
-            }
-        } catch (err) {
-            deckArea.innerHTML = `<p>Error uploading file: ${err.message}</p>`;
-        }
-    });
-}
-
-function renderDeck(cards, container) {
-    let currentIndex = 0;
-
-    function showCard() {
-        const card = cards[currentIndex];
-        container.innerHTML = `
-      <div class="card" id="active-card">
-        <div class="card-inner" id="card-content">
-          <strong>Front:</strong><br>${card.front}
-        </div>
-      </div>
-      <div>
-        <button id="prev-btn" ${currentIndex === 0 ? "disabled" : ""}>Previous</button>
-        <span>Card ${currentIndex + 1} of ${cards.length}</span>
-        <button id="next-btn" ${currentIndex === cards.length - 1 ? "disabled" : ""}>Next</button>
-      </div>
-    `;
-
-        let showingFront = true;
-        const cardContent = container.querySelector("#card-content");
-        container.querySelector("#active-card").addEventListener("click", () => {
-            showingFront = !showingFront;
-            cardContent.innerHTML = showingFront
-                ? `<strong>Front:</strong><br>${card.front}`
-                : `<strong>Back:</strong><br>${card.back}`;
+    try {
+      const response = await fetch(`${apiBase}/flashcards`, { method: "POST", body: formData });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.detail || `Server error (${response.status}).`);
+      let cards = data.flashcards;
+      if (typeof cards === "string") cards = JSON.parse(cards);
+      if (!Array.isArray(cards) || cards.length === 0) throw new Error("No flashcards could be generated from this document.");
+      status.textContent = `${cards.length} flashcards are ready. Select a card to reveal its answer.`;
+      cards.forEach((card, index) => {
+        const question = String(card.front || card.question || "Review this concept");
+        const answer = String(card.back || card.answer || "No answer provided.");
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "flashcard";
+        const label = document.createElement("span");
+        label.className = "flashcard-label";
+        label.textContent = "QUESTION";
+        const content = document.createElement("p");
+        content.className = "flashcard-text";
+        content.textContent = question;
+        const footer = document.createElement("span");
+        footer.className = "flashcard-meta";
+        footer.textContent = `Card ${index + 1} · Tap to reveal`;
+        button.append(label, content, footer);
+        button.addEventListener("click", () => {
+          const flipped = button.classList.toggle("is-flipped");
+          label.textContent = flipped ? "ANSWER" : "QUESTION";
+          content.textContent = flipped ? answer : question;
+          content.classList.toggle("flashcard-answer", flipped);
+          footer.textContent = `Card ${index + 1} · Tap to ${flipped ? "flip back" : "reveal"}`;
         });
-
-        container.querySelector("#prev-btn").addEventListener("click", () => {
-            if (currentIndex > 0) { currentIndex--; showCard(); }
-        });
-        container.querySelector("#next-btn").addEventListener("click", () => {
-            if (currentIndex < cards.length - 1) { currentIndex++; showCard(); }
-        });
+        deck.append(button);
+      });
+    } catch (error) {
+      status.textContent = error.message || "Could not generate flashcards. Check that the tutor server is running.";
+    } finally {
+      uploadButton.disabled = false;
+      fileInput.value = "";
     }
-
-    showCard();
+  });
 }

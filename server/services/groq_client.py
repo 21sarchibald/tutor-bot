@@ -1,5 +1,6 @@
 import json
 import os
+import logging
 from datetime import datetime
 from pathlib import Path
 
@@ -13,36 +14,41 @@ load_dotenv(dotenv_path=SERVER_DIR / ".env", override=True)
 
 SUMMARY_TRIGGER = 5
 DEFAULT_CHAT = "default"
-MODEL_NAME = "llama-3.3-70b-versatile"
+MODEL_NAME = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
 
 API_KEY = os.getenv("GROQ_API_KEY")
-
-# Debug print to verify which key Python is actually reading on server startup
-print(f"DEBUG: Loaded API Key starts with -> {API_KEY[:7] if API_KEY else 'NONE'}")
-
-if not API_KEY:
-    raise RuntimeError("Missing GROQ_API_KEY environment variable. Please check your .env file or environment settings.")
-
-client = Groq(api_key=API_KEY)
+logger = logging.getLogger(__name__)
+client = Groq(api_key=API_KEY) if API_KEY else None
 
 
-def query_groq_ai(prompt: str) -> str:
-    """Sends a prompt to Groq and returns the model response text."""
+def get_client() -> Groq:
+    """Return the configured Groq client, with an actionable setup error."""
+    if client is None:
+        raise RuntimeError("The AI service is not configured. Add GROQ_API_KEY to server/.env and restart the server.")
+    return client
+
+
+def query_groq_ai(prompt: str, *, response_format: dict | None = None, system_prompt: str = "You are a helpful academic tutor.") -> str:
+    """Send a prompt to Groq and return the model response text."""
     try:
-        response = client.chat.completions.create(
+        options = {}
+        if response_format is not None:
+            options["response_format"] = response_format
+        response = get_client().chat.completions.create(
             model=MODEL_NAME,
             messages=[
-                {
-                    "role": "system",
-                    "content": "You are a helpful academic tutor.",
-                },
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt},
             ],
+            **options,
         )
-        return response.choices[0].message.content
+        content = response.choices[0].message.content
+        if not content:
+            raise RuntimeError("The AI service returned an empty response.")
+        return content
     except Exception as exc:
-        print(f"Groq API Error: {exc}")
-        return f"Error: {exc}"
+        logger.exception("Groq request failed")
+        raise RuntimeError("The AI service could not complete the request. Check the API key, model, and network connection.") from exc
 
 
 def ensure_conversations_folder():
@@ -153,7 +159,7 @@ Recent Conversation:
         summary_prompt += f"\n\nCurrent Summary:\n {old_summary}"
 
     try:
-        response = client.chat.completions.create(
+        response = get_client().chat.completions.create(
             model=MODEL_NAME,
             messages=[
                 {
@@ -218,14 +224,16 @@ def process_chat_message(chat_name: str, user_input: str) -> str:
     maybe_update_summary(chat_name, conversation)
 
     try:
-        response = client.chat.completions.create(
+        response = get_client().chat.completions.create(
             model=MODEL_NAME,
             messages=build_prompt_messages(conversation)
         )
         bot_response = response.choices[0].message.content
-    except Exception as e:
-        print(f"Groq API Error: {e}")
-        bot_response = "I ran into an issue connecting to my AI processor. Please try again."
+        if not bot_response:
+            raise RuntimeError("The AI service returned an empty response.")
+    except Exception as error:
+        logger.exception("Tutor response generation failed")
+        raise RuntimeError("The tutor could not generate a reply. Check the API key, model, and network connection.") from error
 
     # Save bot response
     messages.append({"role": "assistant", "content": bot_response})

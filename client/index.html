@@ -1,78 +1,101 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tutor Bot</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f7f7f4" />
+    <meta name="description" content="A focused AI study companion. Ask questions, explore ideas, and turn your course materials into flashcards." />
+    <title>SWE AI Tutor Bot - StudySpace</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
     <script src="script.js" defer></script>
-    <link href="style.css" rel="stylesheet">
-</head>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+        <a class="brand" href="#chatSection" aria-label="Studyspace home">
+          <img class="brand-logo" src="images/swee_logo.png" alt="Society of Women Engineers logo" />
+          <span class="brand-name">studyspace<span>.</span></span>
+        </a>
 
-<body>
-    <wrapper id="page">
-        <!-- TOP HEADER BAR -->
-        <div id="top">
-            <button id="sidebarBtn"><img src="images/swee_logo.png" class="logo" alt="Logo"></button>
-            <h1 id="headerTitle">Tutor Bot</h1>
+        <button class="new-chat-button" id="newChatBtn" type="button"><span aria-hidden="true">＋</span> New conversation</button>
+
+        <div class="nav-label">WORKSPACE</div>
+        <nav class="nav-links">
+          <button class="nav-link active" type="button" data-tab="chatSection" data-title="AI tutor" aria-current="page"><span class="nav-icon" aria-hidden="true">◉</span> AI tutor</button>
+          <button class="nav-link" type="button" data-tab="flashcardsSection" data-title="Flashcards"><span class="nav-icon" aria-hidden="true">▤</span> Flashcards <span class="nav-count" id="flashcardCount">0</span></button>
+          <button class="nav-link" type="button" data-tab="aboutSection" data-title="About"><span class="nav-icon" aria-hidden="true">✳</span> About</button>
+        </nav>
+
+        <div class="history-block">
+          <div class="nav-label">RECENT</div>
+          <div class="history-empty" id="historyList">Your conversations will appear here.</div>
         </div>
 
-        <!-- SIDEBAR NAVIGATION -->
-        <div id="sidebar" hidden>
-            <div class="sidebar-header">
-                <img src="images/swee_logo.png" class="logo" alt="Logo">
-                <button class="close">X</button>
-            </div>
-
-            <nav class="nav-links">
-                <a href="#" class="nav-link active" data-tab="chatSection">💬 Chat</a>
-                <a href="#" class="nav-link" data-tab="flashcardsSection">🗂️ Flashcards</a>
-                <a href="#" class="nav-link" data-tab="aboutSection">ℹ️ About Us</a>
-            </nav>
-
-            <div id="chat-history">
-                <p><b>Chat History</b></p>
-                <div id="historyList"></div>
-            </div>
+        <div class="sidebar-bottom">
+          <div class="profile-avatar" aria-hidden="true">S</div>
+          <div class="profile-copy"><strong>Study session</strong><span>Ready when you are</span></div>
+          <span class="status-dot" aria-label="Ready"></span>
         </div>
+      </aside>
 
-        <!-- MAIN CONTENT CONTAINER -->
-        <main id="mainContent">
-            <!-- 1. AI CHAT SECTION -->
-            <section id="chatSection" class="content-section active">
-                <div id="chatRoom"></div>
+      <div class="sidebar-scrim" id="sidebarScrim" hidden></div>
 
-                <div id="userinput">
-                    <div id="bar">
-                        <input type="text" id="userPrompt" name="userPrompt" placeholder="Ask Tutor Bot!"
-                            autocomplete="off">
-                    </div>
-                    <div class="buttons">
-                        <!-- Hidden File Input for Document Upload -->
-                        <input type="file" id="fileInput" accept=".pdf,.docx,.txt" style="display: none;">
-                        <button id="fileupload" title="Upload Document"><b>＋</b></button>
-                        <button id="submit" title="Send Message"><b>↥</b></button>
-                    </div>
+      <main class="main-panel">
+        <header class="topbar">
+          <button class="icon-button menu-button" id="sidebarBtn" type="button" aria-label="Open navigation" aria-expanded="false"><span></span><span></span></button>
+          <div class="breadcrumb"><span>Workspace</span><span class="breadcrumb-divider">/</span><strong id="headerTitle">AI tutor</strong></div>
+          <div class="topbar-right"><span class="topbar-note"><span class="status-dot"></span> Your personal study space</span><span class="topbar-avatar" aria-hidden="true">S</span></div>
+        </header>
+
+        <section class="content-section active chat-section" id="chatSection" aria-label="AI tutor chat">
+          <div class="chat-layout">
+            <div class="chat-room" id="chatRoom" aria-live="polite" aria-relevant="additions text">
+              <div class="welcome-state" id="welcomeState">
+                <div class="welcome-orbit" aria-hidden="true"><span class="orbit-spark spark-one">✳</span><span class="orbit-spark spark-two">✦</span><span class="welcome-icon"><svg viewBox="0 0 48 48" fill="none"><path d="M9 12a3 3 0 0 1 3-3h9v29h-9a3 3 0 0 1-3-3V12Z" fill="currentColor" opacity=".5"/><path d="M39 12a3 3 0 0 0-3-3h-9v29h9a3 3 0 0 0 3-3V12Z" fill="currentColor"/><path d="M14 17h3m-3 6h3m11-6h3m-3 6h3" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg></span></div>
+                <p class="eyebrow">A LITTLE MORE CLARITY, EVERY DAY</p>
+                <h1>Make room for<br /><span>that “aha” moment.</span></h1>
+                <p class="welcome-description">Your study sidekick is here. Ask a question, unpack a tricky idea, or turn your notes into something that sticks.</p>
+                <div class="suggestion-grid" aria-label="Try asking">
+                  <button class="suggestion-card" type="button" data-prompt="Explain a difficult idea in simple terms"><span class="suggestion-icon lilac">✳</span><span><strong>Make it make sense</strong><small>Explain a tricky idea, simply</small></span><span class="suggestion-arrow">↗</span></button>
+                  <button class="suggestion-card" type="button" data-prompt="Help me create a focused study plan for this week"><span class="suggestion-icon peach">◷</span><span><strong>Plan a study session</strong><small>Build a plan that feels doable</small></span><span class="suggestion-arrow">↗</span></button>
+                  <button class="suggestion-card" type="button" data-prompt="Quiz me on a subject I am studying"><span class="suggestion-icon mint">✧</span><span><strong>Quiz me</strong><small>Practice until it clicks</small></span><span class="suggestion-arrow">↗</span></button>
+                  <button class="suggestion-card" type="button" data-tab="flashcardsSection"><span class="suggestion-icon butter">▤</span><span><strong>Make flashcards</strong><small>Turn your notes into recall</small></span><span class="suggestion-arrow">↗</span></button>
                 </div>
-            </section>
+              </div>
+            </div>
 
-            <!-- 2. FLASHCARDS SECTION -->
-            <section id="flashcardsSection" class="content-section" hidden>
-                <h2>Generated Flashcards</h2>
-                <div id="output">
-                    <p style="opacity: 0.7;">Upload a document using the <b>＋</b> button in Chat to generate flashcards!
-                    </p>
-                </div>
-            </section>
+            <form class="composer" id="chatForm">
+              <div class="upload-preview" id="uploadPreview" hidden><span id="uploadName"></span><button type="button" id="removeUpload" aria-label="Remove file">×</button></div>
+              <div class="composer-row">
+                <input type="file" id="fileInput" accept=".pdf,.docx,.txt" hidden />
+                <button class="attach-button" id="fileupload" type="button" aria-label="Attach study material" title="Attach a PDF, DOCX, or TXT"><span aria-hidden="true">＋</span></button>
+                <textarea id="userPrompt" name="message" rows="1" placeholder="Ask anything you’re learning…" aria-label="Message your AI tutor"></textarea>
+                <button class="send-button" id="submit" type="submit" aria-label="Send message"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg></button>
+              </div>
+              <div class="composer-footer"><span><kbd>↵</kbd> to send <span class="footer-dot">·</span> <kbd>⇧ ↵</kbd> for a new line</span><span>AI can make mistakes — think critically.</span></div>
+            </form>
+          </div>
+        </section>
 
-            <!-- 3. ABOUT US SECTION -->
-            <section id="aboutSection" class="content-section" hidden>
-                <h2>About AI Tutor Bot</h2>
-                <p>AI Tutor Bot helps students process dense lecture notes, textbooks, and reading materials into
-                    interactive chat sessions and auto-generated study flashcards.</p>
-            </section>
-        </main>
-    </wrapper>
-</body>
+        <section class="content-section study-section" id="flashcardsSection" hidden aria-labelledby="flashcardHeading">
+          <div class="section-heading"><div><p class="eyebrow">LEARN IT. REMEMBER IT.</p><h1 id="flashcardHeading">Your flashcard studio<span>.</span></h1><p class="section-description">Turn your course materials into bite-sized practice. Upload a document to get started.</p></div><span class="section-heading-icon" aria-hidden="true">▤</span></div>
+          <div class="upload-panel"><div class="upload-illustration" aria-hidden="true">↥</div><div class="upload-copy"><strong>Drop in your study material</strong><span>PDF, DOCX, or TXT · We’ll build your deck for you</span></div><button class="primary-button" type="button" id="flashcardUploadBtn">Choose a file <span>↗</span></button></div>
+          <div class="deck-toolbar"><div><span class="eyebrow">YOUR DECK</span><h2>Study cards <span id="deckTotal">(0)</span></h2></div><div class="deck-controls" id="deckControls" hidden><button class="secondary-button" id="prevCard" type="button" aria-label="Previous card">←</button><span class="card-counter" id="cardCounter">1 / 1</span><button class="secondary-button" id="nextCard" type="button" aria-label="Next card">→</button></div></div>
+          <div id="output" class="flashcard-grid"><div class="empty-deck"><span aria-hidden="true">✧</span><strong>Your next “I’ve got this” starts here.</strong><p>Upload a set of notes and your flashcards will show up here.</p><button class="text-button" type="button" id="emptyUploadBtn">Upload study material <span>→</span></button></div></div>
+          <p class="flip-hint" id="flipHint" hidden>Tip: click a card or press Enter to flip it.</p>
+        </section>
 
+        <section class="content-section study-section about-section" id="aboutSection" hidden aria-labelledby="aboutHeading">
+          <div class="section-heading"><div><p class="eyebrow">BUILT FOR THE WAY YOU LEARN</p><h1 id="aboutHeading">A calmer kind of<br /><span>study session.</span></h1><p class="section-description">Studyspace turns “I don’t get it yet” into a place to begin. Bring your questions, your notes, and your own pace.</p></div><span class="section-heading-icon about-icon" aria-hidden="true">✳</span></div>
+          <div class="about-grid"><article class="feature-card"><span class="suggestion-icon lilac">◉</span><h2>Learn out loud</h2><p>Ask follow-up questions, request a simpler explanation, and explore a topic until it feels clear.</p></article><article class="feature-card"><span class="suggestion-icon butter">▤</span><h2>Study actively</h2><p>Turn PDFs, Word documents, and text notes into flashcards you can flip through at your own pace.</p></article><article class="feature-card"><span class="suggestion-icon mint">✧</span><h2>Keep your momentum</h2><p>Start with a quick question or a small study plan. Progress begins with one manageable step.</p></article></div>
+          <div class="about-note"><span aria-hidden="true">✦</span><p>Made for curious minds, busy weeks, and the satisfaction of finally getting it.</p></div>
+        </section>
+        <footer class="app-footer"><span>Made for curious minds</span><span>Take your time. You’re learning. <span aria-hidden="true">✳</span></span></footer>
+      </main>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </body>
 </html>

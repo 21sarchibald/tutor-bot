@@ -27,7 +27,7 @@ class TextExtractionService:
         """
         Main routing function. Inspects file name extensions to trigger correct sub-parsers.
         """
-        filename = file.filename.lower()
+        filename = (file.filename or "").lower()
 
         try:
             # Siphon the binary byte array out of the network transmission object stream
@@ -76,20 +76,22 @@ class TextExtractionService:
         if Document is None:
             return "Error: python-docx is not installed."
 
-        text = ""
         docx_stream = io.BytesIO(file_bytes)
         doc = Document(docx_stream)
-
-        # Loop through every structural text paragraph division
-        for paragraph in doc.paragraphs:
-            if paragraph.text:
-                text += paragraph.text + "\n"
-        return text
+        paragraphs = [paragraph.text for paragraph in doc.paragraphs if paragraph.text.strip()]
+        table_cells = [
+            cell.text
+            for table in doc.tables
+            for row in table.rows
+            for cell in row.cells
+            if cell.text.strip()
+        ]
+        return "\n".join(paragraphs + table_cells)
     
     @staticmethod
     def _extract_from_txt(file_bytes: bytes):
         """Helper tool converting basic text files into standard unicode strings."""
-        return file_bytes.decode("utf-8")
+        return file_bytes.decode("utf-8-sig")
 
 
 def extract_text_from_pdf(file: UploadFile) -> str:

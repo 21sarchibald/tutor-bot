@@ -1,50 +1,47 @@
-import os
+"""FastAPI application for the Studyspace tutor and flashcard features."""
+
 import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
-
-SERVER_DIR = Path(__file__).resolve().parent
-if str(SERVER_DIR) not in sys.path:
-    sys.path.insert(0, str(SERVER_DIR))
-
-# Pre-load environment variables prior to importing application routes
-load_dotenv(dotenv_path=SERVER_DIR / ".env", override=True)
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+SERVER_DIR = Path(__file__).resolve().parent
+load_dotenv(dotenv_path=SERVER_DIR / ".env", override=False)
+
+# Support both `uvicorn main:app` from server/ and `import server.main` from the repo root.
+if str(SERVER_DIR) not in sys.path:
+    sys.path.insert(0, str(SERVER_DIR))
+
 try:
-    from .routers.chat import router as chat_router
-    from .routers.flashcards import router as flashcard_router
+    from .routers import chat, flashcards
 except ImportError:
-    from routers.chat import router as chat_router
-    from routers.flashcards import router as flashcard_router
+    from routers import chat, flashcards
 
 app = FastAPI(
-    title="AI Academic Tutor API",
-    version="1.0.0"
+    title="Studyspace API",
+    description="AI tutoring conversations and study flashcards generated from course materials.",
+    version="1.0.0",
 )
 
-# Enable CORS for frontend clients
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
-# Register chat endpoints
-app.include_router(chat_router)
-app.include_router(flashcard_router)
+app.include_router(chat.router)
+app.include_router(flashcards.router)
 
 
-@app.get("/")
+@app.get("/", tags=["status"])
 def root():
-    return {"message": "AI Academic Tutor API is running"}
+    return {"message": "Studyspace API is running."}
 
 
-@app.get("/health")
+@app.get("/health", tags=["status"])
 def health_check():
     return {"status": "healthy"}

@@ -1,4 +1,9 @@
-from fastapi import APIRouter, UploadFile
+"""Document upload and flashcard generation endpoint."""
+
+import logging
+from pathlib import Path
+
+from fastapi import APIRouter, File, HTTPException, UploadFile
 
 try:
     from ..services.flashcard_generator import generate_flashcards
@@ -8,71 +13,45 @@ except ImportError:
     from services.text_extraction import extract_text_from_pdf
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
+MAX_UPLOAD_BYTES = 12 * 1024 * 1024
+SUPPORTED_SUFFIXES = {".pdf", ".docx", ".txt"}
 
 
 @router.post("/flashcards")
-async def flashcard_endpoint(file: UploadFile):
-    text = extract_text_from_pdf(file)
-    flashcards = generate_flashcards(text)
-    return {"flashcards": flashcards}
+def flashcard_endpoint(file: UploadFile = File(...)):
+    """Extract text from an uploaded document and return generated study cards."""
+    suffix = Path(file.filename or "").suffix.lower()
+    if suffix not in SUPPORTED_SUFFIXES:
+        raise HTTPException(status_code=415, detail="Upload a PDF, DOCX, or TXT file.")
 
-# Flashcard Manager
-# File: Routers/flashcards.py
-# Description: Code for creating and viewing student academic flashcards
+    file.file.seek(0, 2)
+    file_size = file.file.tell()
+    file.file.seek(0)
+    if file_size == 0:
+        raise HTTPException(status_code=400, detail="The selected file is empty.")
+    if file_size > MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="The file is too large. Choose a file under 12 MB.")
 
-try:
-    import streamlit as st
-except ImportError:  # pragma: no cover - optional dependency for local UI
-    st = None
+    try:
+        text = extract_text_from_pdf(file)
+        if text.startswith(("Error:", "Error processing file:")):
+            detail = text.removeprefix("Error processing file:").removeprefix("Error:").strip()
+            raise HTTPException(status_code=422, detail=detail)
+        if not text.strip():
+            raise HTTPException(status_code=422, detail="No readable text was found. Try a text based PDF, DOCX, or TXT file.")
+        cards = generate_flashcards(text)
+    except HTTPException:
+        raise
+    except RuntimeError as error:
+        logger.exception("Flashcard generation failed")
+        raise HTTPException(status_code=503, detail=str(error)) from error
+    except Exception as error:
+        logger.exception("Document processing failed")
+        raise HTTPException(status_code=422, detail="This document could not be read. Check the file and try again.") from error
+    finally:
+        file.file.close()
 
-
-def show_flashcards_interface():
-
-    # Set up the section header
-    st.header("Creating & Accessing Flashcards")
-
-
-    # PART 1: CREATE NEW FLASHCARDS
-
-    with st.expander("Create New Flashcard", expanded=False):
-        # Get text inputs from the user for both sides of the card
-        front = st.text_input("Front Side (Question):")
-        back = st.text_input("Back Side (Answer):")
-
-
-        # Save button logic
-        if st.button("Save Flashcard"):
-            if front and back:
-                # Add the new card data to the persistent memory list
-                st.session_state.flashcards.append({"front": front, "back": back})
-                st.success("Flashcards added!")
-                st.rerun() # Refresh the page to show the changes
-
-
-    # PART 2: ACCESS & REVIEW FLASHCARDS
-
-    # Only show this section if there are cards in the list
-    if st.session_state.flashcards():
-        st.write("### Reviewing Cards")
-
-
-        # Use a slider to let the user select which card to view 
-        card_idx = st.slider("Navigate Cards:", 0, len(st.session_state.flashcards)) - 1,
-        current_card = st.session_state.flashcards[card_idx]
-
-
-        # Always display the front side of the selected card 
-        st.info(f"**Front:** {current_card['front']}")
-
-
-        # Only display the back side if the user clicks the flip button 
-        if st.button("Flip Card / Show Answers"):
-            st.success(f"**Back:** {current_card['back']}")
-
-
-    else:
-        # Message shown if the flashcard list is empty
-        st.info("Your deck is currently empty. Expand the creator box above to add carts.")
-        
-
-
+    if not cards:
+        raise HTTPException(status_code=422, detail="No flashcards could be generated from this document.")
+    return {"flashcards": cards}
