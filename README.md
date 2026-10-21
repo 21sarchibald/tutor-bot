@@ -45,6 +45,10 @@ python -m http.server 5500
 
 Open `http://localhost:5500`. The browser frontend connects to the API on port `8080`.
 
+The workspace Live Server settings ignore the backend's saved conversations and runtime files. Without this, Live Server can reload the page after every chat save and make a successful reply disappear.
+
+If port `5500` is already occupied by Live Server, run `python -m http.server 5501 --bind 127.0.0.1` from `client/` and open `http://127.0.0.1:5501`. Restart Live Server once after the workspace ignore settings change.
+
 ## Project structure
 
 ```text

@@ -3,6 +3,7 @@
 const API_BASE = window.location.protocol === "http:" || window.location.protocol === "https:"
   ? `${window.location.protocol}//${window.location.hostname || "127.0.0.1"}:8080`
   : "http://127.0.0.1:8080";
+const IS_FILE_PAGE = window.location.protocol === "file:";
 const sideBar = document.querySelector("#sidebar");
 const sideBtn = document.querySelector("#sidebarBtn");
 const scrim = document.querySelector("#sidebarScrim");
@@ -28,6 +29,11 @@ let activeCardIndex = 0;
 let studyMode = "cards";
 let studyNotes = "";
 let toastTimer;
+let conversationLoadToken = 0;
+
+function isAiProcessorErrorMessage(text) {
+  return /(?:issue|error|problem) connecting to my ai processor/i.test(String(text || ""));
+}
 
 function showToast(message) {
   toast.textContent = message;
@@ -110,22 +116,36 @@ function clearChat() {
 }
 
 async function loadConversation(chatName) {
+  const loadToken = ++conversationLoadToken;
+  const isCurrentLoad = () =>
+    loadToken === conversationLoadToken && currentChatName === chatName;
   currentChatName = chatName;
   clearChat();
   try {
     const response = await fetch(`${API_BASE}/conversations/${encodeURIComponent(chatName)}`);
     if (!response.ok) throw new Error("Could not load conversation.");
     const conversation = await response.json();
+    if (!isCurrentLoad()) return;
     const messages = (conversation.messages || []).filter((message) => ["user", "assistant"].includes(message.role));
-    if (messages.length) {
+    const visibleMessages = [];
+    for (const current of messages) {
+      // Keep every question in the saved transcript. A provider error is not
+      // an answer, so omit only that error placeholder from the chat display.
+      if (current.role === "assistant" && isAiProcessorErrorMessage(current.content)) {
+        continue;
+      }
+      visibleMessages.push(current);
+    }
+    if (visibleMessages.length) {
       welcomeState.hidden = true;
-      messages.forEach((message) => appendMessage(message.content || "", message.role === "user" ? "user" : "assistant"));
+      visibleMessages.forEach((message) => appendMessage(message.content || "", message.role === "user" ? "user" : "assistant"));
     }
   } catch (error) {
+    if (!isCurrentLoad()) return;
     console.error("Conversation history error:", error);
     if (chatName !== "default") showToast("Could not load that conversation. Start a new one instead.");
   }
-  await refreshHistory();
+  if (isCurrentLoad()) await refreshHistory();
 }
 
 async function refreshHistory() {
@@ -133,7 +153,9 @@ async function refreshHistory() {
     const response = await fetch(`${API_BASE}/conversations`);
     if (!response.ok) return;
     const data = await response.json();
-    const names = (data.conversations || []).filter((name) => name !== "default").reverse();
+    // Include the default/main chat too: every message sent there is saved by
+    // the API and should remain reachable after the user leaves the page.
+    const names = (data.conversations || []).reverse();
     chatHistory.replaceChildren();
     if (!names.length) {
       chatHistory.className = "history-empty";
@@ -145,7 +167,9 @@ async function refreshHistory() {
       const item = document.createElement("button");
       item.type = "button";
       item.className = "history-item";
-      item.textContent = name.replace(/^study-/, "Study session ");
+      item.textContent = name === "default"
+        ? "Main conversation"
+        : name.replace(/^study-/, "Study session ");
       item.title = name;
       item.addEventListener("click", () => {
         navigate("chatSection");
@@ -161,6 +185,8 @@ async function refreshHistory() {
 async function sendMessage(message = userPrompt.value.trim()) {
   const cleanMessage = message.trim();
   if (!cleanMessage || submitBtn.disabled) return;
+  // A late history response must not repaint over a message the user just sent.
+  conversationLoadToken += 1;
   navigate("chatSection");
   appendMessage(cleanMessage, "user");
   const pending = appendMessage("Tutor is thinking", "assistant");
@@ -183,15 +209,23 @@ async function sendMessage(message = userPrompt.value.trim()) {
     pending.row.classList.remove("pending");
     userPrompt.value = "";
     userPrompt.style.height = "auto";
-    await refreshHistory();
   } catch (error) {
     pending.row.classList.remove("pending");
     const apiUnavailable = error instanceof TypeError;
-    pending.content.textContent = apiUnavailable
-      ? "I can’t reach the Studyspace API at 127.0.0.1:8080. Start the backend from the server folder, then send your message again."
+    pending.content.textContent = IS_FILE_PAGE
+      ? "Open Studyspace at http://127.0.0.1:5501/ so the browser can connect to the tutor."
+      : apiUnavailable
+        ? "I can’t reach the Studyspace API at 127.0.0.1:8080. Start the backend from the server folder, then send your message again."
       : `I couldn’t reach your tutor. ${error.message || "Check that the server is running, then try again."}`;
-    showToast(apiUnavailable ? "Studyspace API isn’t running. Start the backend, then try again." : `Message wasn’t sent. ${error.message || "Try again."}`);
+    showToast(IS_FILE_PAGE
+      ? "Open Studyspace at http://127.0.0.1:5501/ to use the tutor."
+      : apiUnavailable
+        ? "Studyspace API isn’t running. Start the backend, then try again."
+        : `Message wasn’t sent. ${error.message || "Try again."}`);
   } finally {
+    // The API saves the user's question before asking the AI provider. Refresh
+    // here as well as on success so a question is still listed if AI fails.
+    await refreshHistory();
     submitBtn.disabled = false;
     userPrompt.focus();
     chatRoom.scrollTop = chatRoom.scrollHeight;
@@ -216,6 +250,7 @@ document.querySelectorAll(".suggestion-card[data-prompt]").forEach((button) => {
   button.addEventListener("click", () => sendMessage(button.dataset.prompt));
 });
 document.querySelector("#newChatBtn").addEventListener("click", () => {
+  conversationLoadToken += 1;
   currentChatName = `study-${Date.now()}`;
   clearChat();
   navigate("chatSection");
@@ -303,8 +338,10 @@ async function generateFlashcards(file) {
     const title = document.createElement("strong");
     title.textContent = "We couldn’t make this deck yet.";
     const detail = document.createElement("p");
-    detail.textContent = error instanceof TypeError
-      ? "Can’t connect to the Studyspace API at 127.0.0.1:8080. Start the backend from the server folder, then try again."
+    detail.textContent = IS_FILE_PAGE
+      ? "Open Studyspace at http://127.0.0.1:5501/ so the browser can connect to the tutor."
+      : error instanceof TypeError
+        ? "Can’t connect to the Studyspace API at 127.0.0.1:8080. Start the backend from the server folder, then try again."
       : error.message || "Check that the tutor server is running, then try again.";
     const retry = document.createElement("button");
     retry.className = "text-button";
@@ -313,8 +350,10 @@ async function generateFlashcards(file) {
     retry.addEventListener("click", () => fileInput.click());
     empty.append(icon, title, detail, retry);
     output.append(empty);
-    showToast(error instanceof TypeError
-      ? "Studyspace API isn’t running. Start the backend, then upload again."
+    showToast(IS_FILE_PAGE
+      ? "Open Studyspace at http://127.0.0.1:5501/ to use the tutor."
+      : error instanceof TypeError
+        ? "Studyspace API isn’t running. Start the backend, then upload again."
       : `Flashcards weren’t generated. ${error.message || "Try again."}`);
   }
 }

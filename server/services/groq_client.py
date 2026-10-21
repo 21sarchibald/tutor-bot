@@ -41,6 +41,42 @@ def describe_groq_error(error: Exception) -> str:
     return "The AI service could not complete the request. Check the API key, model, and network connection."
 
 
+def is_ai_processor_error_message(content: str) -> bool:
+    """Identify connection-error placeholders that must not become tutor history."""
+    normalized = " ".join(content.casefold().split())
+    return any(
+        phrase in normalized
+        for phrase in (
+            "issue connecting to my ai processor",
+            "error connecting to my ai processor",
+            "problem connecting to my ai processor",
+        )
+    )
+
+
+def get_reliable_messages(messages: list[dict]) -> list[dict]:
+    """Drop failed user/assistant turns from prompts while preserving saved history."""
+    reliable = []
+    index = 0
+    while index < len(messages):
+        current = messages[index]
+        next_message = messages[index + 1] if index + 1 < len(messages) else None
+        if (
+            current.get("role") == "user"
+            and next_message
+            and next_message.get("role") == "assistant"
+            and is_ai_processor_error_message(str(next_message.get("content", "")))
+        ):
+            index += 2
+            continue
+        if current.get("role") == "assistant" and is_ai_processor_error_message(str(current.get("content", ""))):
+            index += 1
+            continue
+        reliable.append(current)
+        index += 1
+    return reliable
+
+
 def query_groq_ai(prompt: str, *, response_format: dict | None = None, system_prompt: str = "You are a helpful academic tutor.") -> str:
     """Send a prompt to Groq and return the model response text."""
     try:
@@ -140,13 +176,16 @@ def list_all_conversations() -> list[str]:
 def update_summary(conversation: dict) -> str:
     """Creates/updates dynamic memory summary using Groq."""
     old_summary = conversation.get("summary", "")
+    if is_ai_processor_error_message(old_summary):
+        old_summary = ""
     transcript = ""
+    reliable_messages = get_reliable_messages(conversation["messages"])
 
-    if len(conversation["messages"]) < SUMMARY_TRIGGER:
-        for message in conversation["messages"]:
+    if len(reliable_messages) < SUMMARY_TRIGGER:
+        for message in reliable_messages:
             transcript += f"{message['role']}: {message['content']}\n\n"
     else:
-        for message in conversation["messages"][-SUMMARY_TRIGGER:]:
+        for message in reliable_messages[-SUMMARY_TRIGGER:]:
             transcript += f"{message['role']}: {message['content']}\n\n"
 
     summary_prompt = f"""
@@ -200,23 +239,27 @@ def maybe_update_summary(chat_name: str, conversation: dict) -> None:
 
 def build_prompt_messages(conversation: dict) -> list[dict]:
     """Combines baseline system instructions, memory summaries, and recent turns."""
-    prompt_messages = [conversation["messages"][0]]
+    messages = get_reliable_messages(conversation["messages"])
+    if not messages:
+        return []
+
+    prompt_messages = [messages[0]]
     summary = conversation.get("summary", "")
 
-    if summary:
+    if summary and not is_ai_processor_error_message(summary):
         prompt_messages.append({
             "role": "system",
             "content": f"Conversation Summary:\n{summary}"
         })
 
-    messages_since_summary = (len(conversation["messages"]) - 1) % SUMMARY_TRIGGER
+    messages_since_summary = (len(messages) - 1) % SUMMARY_TRIGGER
 
-    if len(conversation["messages"]) - 1 <= SUMMARY_TRIGGER:
-        prompt_messages.extend(conversation["messages"][1:])
+    if len(messages) - 1 <= SUMMARY_TRIGGER:
+        prompt_messages.extend(messages[1:])
     elif messages_since_summary < 3:
-        prompt_messages.extend(conversation["messages"][-3:])
+        prompt_messages.extend(messages[-3:])
     else:
-        prompt_messages.extend(conversation["messages"][-messages_since_summary:])
+        prompt_messages.extend(messages[-messages_since_summary:])
 
     return prompt_messages
 
@@ -229,8 +272,14 @@ def process_chat_message(chat_name: str, user_input: str) -> str:
     conversation = load_conversation(chat_name)
     messages = conversation["messages"]
 
-    # Save user input
-    messages.append({"role": "user", "content": user_input})
+    # A failed provider request leaves its user turn at the end of the saved
+    # transcript. Replace that unanswered turn on retry so the provider never
+    # receives consecutive user messages (including from failures before this
+    # recovery logic was added).
+    if messages and messages[-1].get("role") == "user":
+        messages[-1]["content"] = user_input
+    else:
+        messages.append({"role": "user", "content": user_input})
     conversation["messages"] = messages
     save_conversation(chat_name, conversation)
 
@@ -247,6 +296,13 @@ def process_chat_message(chat_name: str, user_input: str) -> str:
     except Exception as error:
         logger.exception("Tutor response generation failed")
         raise RuntimeError(describe_groq_error(error)) from error
+
+    if is_ai_processor_error_message(bot_response):
+        logger.warning("AI provider returned a connection-error placeholder; it was not saved as a tutor reply.")
+        raise RuntimeError(
+            "The AI provider returned a connection-error message instead of a tutor answer. "
+            "The failed reply was not saved; please retry."
+        )
 
     # Save bot response
     messages.append({"role": "assistant", "content": bot_response})

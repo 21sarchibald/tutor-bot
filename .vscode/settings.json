@@ -1,3 +1,14 @@
 {
-    "python-envs.defaultEnvManager": "ms-python.python:system"
+    "python-envs.defaultEnvManager": "ms-python.python:system",
+    "liveServer.settings.ignoreFiles": [
+        ".vscode/**",
+        "**/*.scss",
+        "**/*.sass",
+        "**/*.ts",
+        "server/conversations/**",
+        "server/**/*.log",
+        "server/**/__pycache__/**",
+        "server/.venv/**",
+        "server/.env*"
+    ]
 }

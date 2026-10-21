@@ -25,12 +25,59 @@ app = FastAPI(
     version="1.0.0",
 )
 
+LOCAL_FRONTEND_ORIGINS = {
+    "http://127.0.0.1:5500",
+    "http://localhost:5500",
+    "http://127.0.0.1:5501",
+    "http://localhost:5501",
+}
+
+
+class PrivateNetworkAccessMiddleware:
+    """Allow browser PNA preflights from the local Studyspace frontend only."""
+
+    def __init__(self, app, allowed_origins):
+        self.app = app
+        self.allowed_origins = allowed_origins
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http" and scope["method"] == "OPTIONS":
+            headers = dict(scope.get("headers", ()))
+            origin = headers.get(b"origin", b"").decode("latin-1")
+            requested = headers.get(b"access-control-request-private-network")
+            if requested == b"true" and origin in self.allowed_origins:
+                requested_headers = headers.get(
+                    b"access-control-request-headers", b"content-type"
+                )
+                await send(
+                    {
+                        "type": "http.response.start",
+                        "status": 200,
+                        "headers": [
+                            (b"access-control-allow-origin", origin.encode("latin-1")),
+                            (b"access-control-allow-methods", b"GET, POST, OPTIONS"),
+                            (b"access-control-allow-headers", requested_headers),
+                            (b"access-control-allow-private-network", b"true"),
+                            (b"content-length", b"2"),
+                        ],
+                    }
+                )
+                await send({"type": "http.response.body", "body": b"OK"})
+                return
+        await self.app(scope, receive, send)
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=sorted(LOCAL_FRONTEND_ORIGINS),
     allow_credentials=False,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
+)
+
+app.add_middleware(
+    PrivateNetworkAccessMiddleware,
+    allowed_origins=LOCAL_FRONTEND_ORIGINS,
 )
 
 app.include_router(chat.router)
