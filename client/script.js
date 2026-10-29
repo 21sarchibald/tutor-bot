@@ -1,8 +1,12 @@
 // `file://` pages have no hostname and cannot form a valid API URL. Keep the
 // documented local-server workflow usable even when index.html is opened directly.
-const API_BASE = window.location.protocol === "http:" || window.location.protocol === "https:"
-  ? `${window.location.protocol}//${window.location.hostname || "127.0.0.1"}:8080`
-  : "http://127.0.0.1:8080";
+const API_BASE = window.STUDYSPACE_API_URL || (
+  window.location.protocol === "http:" || window.location.protocol === "https:"
+    ? (["5500", "5501"].includes(window.location.port)
+      ? `${window.location.protocol}//${window.location.hostname || "127.0.0.1"}:8080`
+      : window.location.origin)
+    : "http://127.0.0.1:8080"
+);
 const IS_FILE_PAGE = window.location.protocol === "file:";
 const sideBar = document.querySelector("#sidebar");
 const sideBtn = document.querySelector("#sidebarBtn");
@@ -30,6 +34,7 @@ let studyMode = "cards";
 let studyNotes = "";
 let toastTimer;
 let conversationLoadToken = 0;
+let currentStudyContextId = null;
 
 function isAiProcessorErrorMessage(text) {
   return /(?:issue|error|problem) connecting to my ai processor/i.test(String(text || ""));
@@ -128,9 +133,19 @@ async function loadConversation(chatName) {
     if (!isCurrentLoad()) return;
     const messages = (conversation.messages || []).filter((message) => ["user", "assistant"].includes(message.role));
     const visibleMessages = [];
-    for (const current of messages) {
-      // Keep every question in the saved transcript. A provider error is not
-      // an answer, so omit only that error placeholder from the chat display.
+    for (let index = 0; index < messages.length; index += 1) {
+      const current = messages[index];
+      const next = messages[index + 1];
+      // A failed provider request is saved for recovery, but neither half of
+      // that failed turn belongs in the visible conversation history.
+      if (
+        current.role === "user" &&
+        next?.role === "assistant" &&
+        isAiProcessorErrorMessage(next.content)
+      ) {
+        index += 1;
+        continue;
+      }
       if (current.role === "assistant" && isAiProcessorErrorMessage(current.content)) {
         continue;
       }
@@ -201,7 +216,11 @@ async function sendMessage(message = userPrompt.value.trim()) {
     const response = await fetch(`${API_BASE}/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_name: currentChatName, message: cleanMessage }),
+      body: JSON.stringify({
+        chat_name: currentChatName,
+        message: cleanMessage,
+        context_id: currentStudyContextId,
+      }),
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.detail || `Server error (${response.status}).`);
@@ -216,7 +235,7 @@ async function sendMessage(message = userPrompt.value.trim()) {
       ? "Open Studyspace at http://127.0.0.1:5501/ so the browser can connect to the tutor."
       : apiUnavailable
         ? "I can’t reach the Studyspace API at 127.0.0.1:8080. Start the backend from the server folder, then send your message again."
-      : `I couldn’t reach your tutor. ${error.message || "Check that the server is running, then try again."}`;
+      : `I couldn’t reach your tutor. ${error.message || "Check the server and AI provider settings, then try again."}`;
     showToast(IS_FILE_PAGE
       ? "Open Studyspace at http://127.0.0.1:5501/ to use the tutor."
       : apiUnavailable
@@ -252,6 +271,7 @@ document.querySelectorAll(".suggestion-card[data-prompt]").forEach((button) => {
 document.querySelector("#newChatBtn").addEventListener("click", () => {
   conversationLoadToken += 1;
   currentChatName = `study-${Date.now()}`;
+  currentStudyContextId = null;
   clearChat();
   navigate("chatSection");
   refreshHistory();
@@ -317,6 +337,7 @@ async function generateFlashcards(file) {
     const response = await fetch(`${API_BASE}/flashcards`, { method: "POST", body: formData });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.detail || `Server error (${response.status}).`);
+    currentStudyContextId = data.context_id || null;
     if (studyMode === "notes") {
       studyNotes = String(data.notes || "").trim();
       if (!studyNotes) throw new Error("No study notes could be generated from this document.");
@@ -342,7 +363,7 @@ async function generateFlashcards(file) {
       ? "Open Studyspace at http://127.0.0.1:5501/ so the browser can connect to the tutor."
       : error instanceof TypeError
         ? "Can’t connect to the Studyspace API at 127.0.0.1:8080. Start the backend from the server folder, then try again."
-      : error.message || "Check that the tutor server is running, then try again.";
+        : error.message || "Check the tutor server and AI provider settings, then try again.";
     const retry = document.createElement("button");
     retry.className = "text-button";
     retry.type = "button";

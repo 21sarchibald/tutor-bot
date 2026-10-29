@@ -7,9 +7,11 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 try:
     from ..services.flashcard_generator import generate_flashcards, generate_study_notes
+    from ..services.study_context import save_study_context
     from ..services.text_extraction import extract_text_from_pdf
 except ImportError:
     from services.flashcard_generator import generate_flashcards, generate_study_notes
+    from services.study_context import save_study_context
     from services.text_extraction import extract_text_from_pdf
 
 router = APIRouter()
@@ -42,11 +44,12 @@ def flashcard_endpoint(file: UploadFile = File(...), study_mode: str = Form("car
             raise HTTPException(status_code=422, detail=detail)
         if not text.strip():
             raise HTTPException(status_code=422, detail="No readable text was found. Try a text based PDF, DOCX, or TXT file.")
+        context_id = save_study_context(file.filename or "study material", text)
         if study_mode == "notes":
             notes = generate_study_notes(text)
             if not notes.strip():
                 raise HTTPException(status_code=422, detail="No study notes could be generated from this document.")
-            return {"notes": notes}
+            return {"notes": notes, "context_id": context_id, "filename": file.filename}
         cards = generate_flashcards(text)
     except HTTPException:
         raise
@@ -61,4 +64,4 @@ def flashcard_endpoint(file: UploadFile = File(...), study_mode: str = Form("car
 
     if not cards:
         raise HTTPException(status_code=422, detail="No flashcards could be generated from this document.")
-    return {"flashcards": cards}
+    return {"flashcards": cards, "context_id": context_id, "filename": file.filename}

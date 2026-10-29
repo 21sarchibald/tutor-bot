@@ -20,6 +20,7 @@ router = APIRouter()
 class ChatRequest(BaseModel):
     chat_name: str = "default"
     message: str
+    context_id: str | None = None
 
 
 @router.post("/chat")
@@ -28,7 +29,7 @@ def chat_endpoint(request: ChatRequest):
         raise HTTPException(status_code=400, detail="Message cannot be empty.")
 
     try:
-        ai_reply = process_chat_message(request.chat_name, request.message)
+        ai_reply = process_chat_message(request.chat_name, request.message, request.context_id)
     except RuntimeError as error:
         raise HTTPException(status_code=503, detail=str(error)) from error
     return {"response": ai_reply}

@@ -1,0 +1,9 @@
+.git
+.venv
+server/.venv
+server/.env*
+server/conversations/*.json
+server/study_contexts/*.json
+server/**/*.log
+**/__pycache__
+**/*.pyc

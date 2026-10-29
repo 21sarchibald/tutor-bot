@@ -7,6 +7,11 @@ from pathlib import Path
 from dotenv import load_dotenv
 from groq import Groq
 
+try:
+    from .study_context import retrieve_context
+except ImportError:
+    from services.study_context import retrieve_context
+
 SERVER_DIR = Path(__file__).resolve().parent.parent
 
 # Keep credentials in the ignored local file; the tracked .env can hold defaults.
@@ -32,12 +37,27 @@ def get_client() -> Groq:
 def describe_groq_error(error: Exception) -> str:
     """Translate common provider failures into actionable, non-secret guidance."""
     status_code = getattr(error, "status_code", None)
+    if error.__class__.__name__ in {"APIConnectionError", "ConnectError", "TimeoutException"}:
+        return (
+            "Studyspace is running, but it cannot reach Groq. Check your internet connection, "
+            "VPN/firewall settings, and whether your network allows api.groq.com."
+        )
     if status_code == 401:
         return "Groq rejected GROQ_API_KEY (HTTP 401). Replace it with a valid key in server/.env, then restart the API."
     if status_code == 404:
         return f"Groq could not find model '{MODEL_NAME}'. Set GROQ_MODEL to an available model in server/.env, then restart the API."
     if status_code == 429:
         return "Groq rate limit or quota was reached. Check your Groq account limits and try again later."
+    if status_code == 403:
+        body = getattr(error, "body", None)
+        provider_error = body.get("error", {}) if isinstance(body, dict) else {}
+        provider_message = provider_error.get("message", "") if isinstance(provider_error, dict) else ""
+        if "network settings" in provider_message.casefold():
+            return (
+                "Groq denied this network or IP address (HTTP 403). Disable any VPN or proxy, "
+                "or try another network, then retry."
+            )
+        return "Groq denied this request (HTTP 403). Check your Groq organization and project permissions."
     return "The AI service could not complete the request. Check the API key, model, and network connection."
 
 
@@ -264,12 +284,15 @@ def build_prompt_messages(conversation: dict) -> list[dict]:
     return prompt_messages
 
 
-def process_chat_message(chat_name: str, user_input: str) -> str:
+def process_chat_message(chat_name: str, user_input: str, context_id: str | None = None) -> str:
     """Processes message, maintains state, queries Groq API, and returns reply."""
     if not chat_name:
         chat_name = DEFAULT_CHAT
 
     conversation = load_conversation(chat_name)
+    if context_id:
+        conversation["study_context_id"] = context_id
+    context_id = context_id or conversation.get("study_context_id")
     messages = conversation["messages"]
 
     # A failed provider request leaves its user turn at the end of the saved
@@ -285,10 +308,27 @@ def process_chat_message(chat_name: str, user_input: str) -> str:
 
     maybe_update_summary(chat_name, conversation)
 
+    context = retrieve_context(context_id, user_input)
+    prompt_messages = build_prompt_messages(conversation)
+    if context["sources"]:
+        source_text = "\n\n".join(
+            f"[Source section {source['section']}]\n{source['text']}"
+            for source in context["sources"]
+        )
+        prompt_messages.insert(1, {
+            "role": "system",
+            "content": (
+                f"The user uploaded {context['filename']}. Use the retrieved material below when relevant. "
+                "Answer from these sources when possible, do not invent unsupported facts, and end with "
+                "a brief citation like [Source section 2]. If the sources do not answer the question, say so.\n\n"
+                f"Retrieved material:\n{source_text}"
+            ),
+        })
+
     try:
         response = get_client().chat.completions.create(
             model=MODEL_NAME,
-            messages=build_prompt_messages(conversation)
+            messages=prompt_messages
         )
         bot_response = response.choices[0].message.content
         if not bot_response:

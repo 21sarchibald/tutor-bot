@@ -1,11 +1,14 @@
 """FastAPI application for the Studyspace tutor and flashcard features."""
 
 import sys
+import os
 from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 SERVER_DIR = Path(__file__).resolve().parent
 load_dotenv(dotenv_path=SERVER_DIR / ".env", override=False)
@@ -31,6 +34,12 @@ LOCAL_FRONTEND_ORIGINS = {
     "http://127.0.0.1:5501",
     "http://localhost:5501",
 }
+configured_origins = {
+    origin.strip()
+    for origin in os.getenv("FRONTEND_ORIGINS", "").split(",")
+    if origin.strip()
+}
+FRONTEND_ORIGINS = configured_origins or LOCAL_FRONTEND_ORIGINS
 
 
 class PrivateNetworkAccessMiddleware:
@@ -69,7 +78,7 @@ class PrivateNetworkAccessMiddleware:
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=sorted(LOCAL_FRONTEND_ORIGINS),
+    allow_origins=sorted(FRONTEND_ORIGINS),
     allow_credentials=False,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
@@ -77,18 +86,25 @@ app.add_middleware(
 
 app.add_middleware(
     PrivateNetworkAccessMiddleware,
-    allowed_origins=LOCAL_FRONTEND_ORIGINS,
+    allowed_origins=FRONTEND_ORIGINS,
 )
 
 app.include_router(chat.router)
 app.include_router(flashcards.router)
 
 
-@app.get("/", tags=["status"])
+@app.get("/", tags=["status"], include_in_schema=False)
 def root():
+    if CLIENT_DIR.is_dir():
+        return FileResponse(CLIENT_DIR / "index.html")
     return {"message": "Studyspace API is running."}
 
 
 @app.get("/health", tags=["status"])
 def health_check():
-    return {"status": "healthy"}
+    return {"status": "healthy", "ai_configured": bool(os.getenv("GROQ_API_KEY"))}
+
+
+CLIENT_DIR = SERVER_DIR.parent / "client"
+if CLIENT_DIR.is_dir():
+    app.mount("/", StaticFiles(directory=CLIENT_DIR, html=True), name="frontend")

@@ -9,6 +9,7 @@ __pycache__/
 .env.*
 !.env.example
 server/conversations/*.json
+server/study_contexts/*.json
 .DS_Store
 Thumbs.db
 .vscode/*
