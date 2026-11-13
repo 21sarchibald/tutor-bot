@@ -1,4 +1,86 @@
-INFO:     Started server process [4852]
+INFO:     Started server process [17516]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://127.0.0.1:8080 (Press CTRL+C to quit)
+Groq request failed
+Traceback (most recent call last):
+  File "C:\Users\Hera\Documents\Computer My Documents\Hera\bootcamps\Resume Projects\tutor-bot\server\services\groq_client.py", line 106, in query_groq_ai
+    response = get_client().chat.completions.create(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hera\Documents\Computer My Documents\Hera\bootcamps\Resume Projects\tutor-bot\server\.venv\Lib\site-packages\groq\resources\chat\completions.py", line 466, in create
+    return self._post(
+           ^^^^^^^^^^^
+  File "C:\Users\Hera\Documents\Computer My Documents\Hera\bootcamps\Resume Projects\tutor-bot\server\.venv\Lib\site-packages\groq\_base_client.py", line 1284, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hera\Documents\Computer My Documents\Hera\bootcamps\Resume Projects\tutor-bot\server\.venv\Lib\site-packages\groq\_base_client.py", line 1071, in request
+    raise self._make_status_error_from_response(err.response) from None
+groq.RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m5dns4g3e608h1gwcd81f28v` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 7946, Requested 5541. Please try again in 41.1525s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+Flashcard generation failed
+Traceback (most recent call last):
+  File "C:\Users\Hera\Documents\Computer My Documents\Hera\bootcamps\Resume Projects\tutor-bot\server\services\groq_client.py", line 106, in query_groq_ai
+    response = get_client().chat.completions.create(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hera\Documents\Computer My Documents\Hera\bootcamps\Resume Projects\tutor-bot\server\.venv\Lib\site-packages\groq\resources\chat\completions.py", line 466, in create
+    return self._post(
+           ^^^^^^^^^^^
+  File "C:\Users\Hera\Documents\Computer My Documents\Hera\bootcamps\Resume Projects\tutor-bot\server\.venv\Lib\site-packages\groq\_base_client.py", line 1284, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hera\Documents\Computer My Documents\Hera\bootcamps\Resume Projects\tutor-bot\server\.venv\Lib\site-packages\groq\_base_client.py", line 1071, in request
+    raise self._make_status_error_from_response(err.response) from None
+groq.RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m5dns4g3e608h1gwcd81f28v` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 7946, Requested 5541. Please try again in 41.1525s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Hera\Documents\Computer My Documents\Hera\bootcamps\Resume Projects\tutor-bot\server\routers\flashcards.py", line 53, in flashcard_endpoint
+    cards = generate_flashcards(text)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hera\Documents\Computer My Documents\Hera\bootcamps\Resume Projects\tutor-bot\server\services\flashcard_generator.py", line 52, in generate_flashcards
+    raw_response = query_groq_ai(
+                   ^^^^^^^^^^^^^^
+  File "C:\Users\Hera\Documents\Computer My Documents\Hera\bootcamps\Resume Projects\tutor-bot\server\services\groq_client.py", line 120, in query_groq_ai
+    raise RuntimeError(describe_groq_error(exc)) from exc
+RuntimeError: Groq rate limit or quota was reached. Check your Groq account limits and try again later.
+Groq request failed
+Traceback (most recent call last):
+  File "C:\Users\Hera\Documents\Computer My Documents\Hera\bootcamps\Resume Projects\tutor-bot\server\services\groq_client.py", line 106, in query_groq_ai
+    response = get_client().chat.completions.create(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hera\Documents\Computer My Documents\Hera\bootcamps\Resume Projects\tutor-bot\server\.venv\Lib\site-packages\groq\resources\chat\completions.py", line 466, in create
+    return self._post(
+           ^^^^^^^^^^^
+  File "C:\Users\Hera\Documents\Computer My Documents\Hera\bootcamps\Resume Projects\tutor-bot\server\.venv\Lib\site-packages\groq\_base_client.py", line 1284, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hera\Documents\Computer My Documents\Hera\bootcamps\Resume Projects\tutor-bot\server\.venv\Lib\site-packages\groq\_base_client.py", line 1071, in request
+    raise self._make_status_error_from_response(err.response) from None
+groq.RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m5dns4g3e608h1gwcd81f28v` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 6674, Requested 3813. Please try again in 18.6525s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+Flashcard generation failed
+Traceback (most recent call last):
+  File "C:\Users\Hera\Documents\Computer My Documents\Hera\bootcamps\Resume Projects\tutor-bot\server\services\groq_client.py", line 106, in query_groq_ai
+    response = get_client().chat.completions.create(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hera\Documents\Computer My Documents\Hera\bootcamps\Resume Projects\tutor-bot\server\.venv\Lib\site-packages\groq\resources\chat\completions.py", line 466, in create
+    return self._post(
+           ^^^^^^^^^^^
+  File "C:\Users\Hera\Documents\Computer My Documents\Hera\bootcamps\Resume Projects\tutor-bot\server\.venv\Lib\site-packages\groq\_base_client.py", line 1284, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hera\Documents\Computer My Documents\Hera\bootcamps\Resume Projects\tutor-bot\server\.venv\Lib\site-packages\groq\_base_client.py", line 1071, in request
+    raise self._make_status_error_from_response(err.response) from None
+groq.RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m5dns4g3e608h1gwcd81f28v` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 6674, Requested 3813. Please try again in 18.6525s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Hera\Documents\Computer My Documents\Hera\bootcamps\Resume Projects\tutor-bot\server\routers\flashcards.py", line 53, in flashcard_endpoint
+    cards = generate_flashcards(text)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hera\Documents\Computer My Documents\Hera\bootcamps\Resume Projects\tutor-bot\server\services\flashcard_generator.py", line 52, in generate_flashcards
+    raw_response = query_groq_ai(
+                   ^^^^^^^^^^^^^^
+  File "C:\Users\Hera\Documents\Computer My Documents\Hera\bootcamps\Resume Projects\tutor-bot\server\services\groq_client.py", line 120, in query_groq_ai
+    raise RuntimeError(describe_groq_error(exc)) from exc
+RuntimeError: Groq rate limit or quota was reached. Check your Groq account limits and try again later.
