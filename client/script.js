@@ -1,6 +1,6 @@
 // `file://` pages have no hostname and cannot form a valid API URL. Keep the
 // documented local-server workflow usable even when index.html is opened directly.
-const API_BASE = window.STUDYSPACE_API_URL || (
+const API_BASE = window.QUORIA_API_URL || (
   window.location.protocol === "http:" || window.location.protocol === "https:"
     ? (["5500", "5501"].includes(window.location.port)
       ? `${window.location.protocol}//${window.location.hostname || "127.0.0.1"}:8080`
@@ -232,14 +232,14 @@ async function sendMessage(message = userPrompt.value.trim()) {
     pending.row.classList.remove("pending");
     const apiUnavailable = error instanceof TypeError;
     pending.content.textContent = IS_FILE_PAGE
-      ? "Open Studyspace at http://127.0.0.1:5501/ so the browser can connect to the tutor."
+      ? "Open Quoria at http://127.0.0.1:5501/ so the browser can connect to the tutor."
       : apiUnavailable
-        ? "I can’t reach the Studyspace API at 127.0.0.1:8080. Start the backend from the server folder, then send your message again."
+        ? "I can’t reach the Quoria API at 127.0.0.1:8080. Start the backend from the server folder, then send your message again."
       : `I couldn’t reach your tutor. ${error.message || "Check the server and AI provider settings, then try again."}`;
     showToast(IS_FILE_PAGE
-      ? "Open Studyspace at http://127.0.0.1:5501/ to use the tutor."
+      ? "Open Quoria at http://127.0.0.1:5501/ to use the tutor."
       : apiUnavailable
-        ? "Studyspace API isn’t running. Start the backend, then try again."
+        ? "Quoria API isn’t running. Start the backend, then try again."
         : `Message wasn’t sent. ${error.message || "Try again."}`);
   } finally {
     // The API saves the user's question before asking the AI provider. Refresh
@@ -282,9 +282,14 @@ function setSelectedFile(file) {
   uploadPreview.hidden = !file;
   uploadName.textContent = file ? file.name : "";
 }
-document.querySelector("#fileupload").addEventListener("click", () => fileInput.click());
-document.querySelector("#flashcardUploadBtn").addEventListener("click", () => fileInput.click());
-document.querySelector("#emptyUploadBtn").addEventListener("click", () => fileInput.click());
+function openFilePicker() {
+  // Clearing the value lets the user retry the same document after an error.
+  fileInput.value = "";
+  fileInput.click();
+}
+document.querySelector("#fileupload").addEventListener("click", openFilePicker);
+document.querySelector("#flashcardUploadBtn").addEventListener("click", openFilePicker);
+document.querySelector("#emptyUploadBtn").addEventListener("click", openFilePicker);
 document.querySelectorAll("[data-study-mode]").forEach((button) => {
   button.addEventListener("click", () => {
     studyMode = button.dataset.studyMode;
@@ -360,21 +365,21 @@ async function generateFlashcards(file) {
     title.textContent = "We couldn’t make this deck yet.";
     const detail = document.createElement("p");
     detail.textContent = IS_FILE_PAGE
-      ? "Open Studyspace at http://127.0.0.1:5501/ so the browser can connect to the tutor."
+      ? "Open Quoria at http://127.0.0.1:5501/ so the browser can connect to the tutor."
       : error instanceof TypeError
-        ? "Can’t connect to the Studyspace API at 127.0.0.1:8080. Start the backend from the server folder, then try again."
+        ? "Can’t connect to the Quoria API at 127.0.0.1:8080. Start the backend from the server folder, then try again."
         : error.message || "Check the tutor server and AI provider settings, then try again.";
     const retry = document.createElement("button");
     retry.className = "text-button";
     retry.type = "button";
     retry.textContent = "Try another file →";
-    retry.addEventListener("click", () => fileInput.click());
+    retry.addEventListener("click", openFilePicker);
     empty.append(icon, title, detail, retry);
     output.append(empty);
     showToast(IS_FILE_PAGE
-      ? "Open Studyspace at http://127.0.0.1:5501/ to use the tutor."
+      ? "Open Quoria at http://127.0.0.1:5501/ to use the tutor."
       : error instanceof TypeError
-        ? "Studyspace API isn’t running. Start the backend, then upload again."
+        ? "Quoria API isn’t running. Start the backend, then upload again."
       : `Flashcards weren’t generated. ${error.message || "Try again."}`);
   }
 }

@@ -1,4 +1,4 @@
-"""FastAPI application for the Studyspace tutor and flashcard features."""
+"""FastAPI application for the Quoria tutor and flashcard features."""
 
 import sys
 import os
@@ -23,7 +23,7 @@ except ImportError:
     from routers import chat, flashcards
 
 app = FastAPI(
-    title="Studyspace API",
+    title="Quoria API",
     description="AI tutoring conversations and study flashcards generated from course materials.",
     version="1.0.0",
 )
@@ -43,7 +43,7 @@ FRONTEND_ORIGINS = configured_origins or LOCAL_FRONTEND_ORIGINS
 
 
 class PrivateNetworkAccessMiddleware:
-    """Allow browser PNA preflights from the local Studyspace frontend only."""
+    """Allow browser PNA preflights from the configured Quoria frontend only."""
 
     def __init__(self, app, allowed_origins):
         self.app = app
@@ -97,7 +97,7 @@ app.include_router(flashcards.router)
 def root():
     if CLIENT_DIR.is_dir():
         return FileResponse(CLIENT_DIR / "index.html")
-    return {"message": "Studyspace API is running."}
+    return {"message": "Quoria API is running."}
 
 
 @app.get("/health", tags=["status"])

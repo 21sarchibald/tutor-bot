@@ -1,6 +1,6 @@
-# Studyspace · AI study companion
+# Quoria · AI study companion
 
-Studyspace turns the familiar tutor-bot project into a focused study workspace. Ask an AI tutor questions, upload class materials, and review automatically generated flashcards in a calm, responsive interface that keeps the Society of Women Engineers (SWE) logo.
+Quoria turns the familiar tutor-bot project into a focused study workspace. Ask an AI tutor questions, upload class materials, and review automatically generated flashcards in a calm, responsive interface.
 
 ## Features
 
@@ -18,11 +18,11 @@ Studyspace turns the familiar tutor-bot project into a focused study workspace. 
 The repository includes a production Docker image that serves the frontend and API from one origin. Build and run it with a Groq key injected at runtime:
 
 ```powershell
-docker build -t studyspace .
-docker run --env-file server/.env.local -p 8080:8080 studyspace
+docker build -t quoria .
+docker run --env-file server/.env.local -p 8080:8080 quoria
 ```
 
-Deploy that image to a container host, set `GROQ_API_KEY` as a secret, and expose port `8080` over HTTPS. Because the API serves the frontend in production, the browser uses the same public origin and no API key is exposed to visitors. For a separately hosted frontend, set `window.STUDYSPACE_API_URL` in `client/config.js` and set `FRONTEND_ORIGINS` on the API to the exact frontend URL.
+Deploy that image to a container host, set `GROQ_API_KEY` as a secret, and expose port `8080` over HTTPS. Because the API serves the frontend in production, the browser uses the same public origin and no API key is exposed to visitors. For a separately hosted frontend, set `window.QUORIA_API_URL` in `client/config.js` and set `FRONTEND_ORIGINS` on the API to the exact frontend URL.
 
 ### Quick start on Windows
 
@@ -32,7 +32,7 @@ After the virtual environment and dependencies are installed, run this from the 
 powershell -ExecutionPolicy Bypass -File .\start-studyspace.ps1
 ```
 
-This starts the API and frontend, waits for the API health check, and opens Studyspace in your browser. Add `-OpenBrowser` to the command when you want it to open a browser window:
+This starts the API and frontend, waits for the API health check, and opens Quoria in your browser. Add `-OpenBrowser` to the command when you want it to open a browser window:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\start-studyspace.ps1 -OpenBrowser

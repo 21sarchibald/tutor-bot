@@ -41,7 +41,7 @@ for ($attempt = 0; $attempt -lt 30; $attempt++) {
     }
 }
 if (-not $ready) {
-    throw "Studyspace API did not become ready. Check server\uvicorn.err.log."
+    throw "Quoria API did not become ready. Check server\uvicorn.err.log."
 }
 
 if (-not (Test-Port 5500)) {
@@ -54,4 +54,4 @@ if (-not (Test-Port 5500)) {
 if ($OpenBrowser) {
     Start-Process $SiteUrl
 }
-Write-Host "Studyspace is ready at $SiteUrl"
+Write-Host "Quoria is ready at $SiteUrl"

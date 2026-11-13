@@ -39,7 +39,7 @@ def describe_groq_error(error: Exception) -> str:
     status_code = getattr(error, "status_code", None)
     if error.__class__.__name__ in {"APIConnectionError", "ConnectError", "TimeoutException"}:
         return (
-            "Studyspace is running, but it cannot reach Groq. Check your internet connection, "
+            "Quoria is running, but it cannot reach Groq. Check your internet connection, "
             "VPN/firewall settings, and whether your network allows api.groq.com."
         )
     if status_code == 401:
