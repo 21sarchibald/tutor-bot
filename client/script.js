@@ -35,6 +35,8 @@ let studyNotes = "";
 let toastTimer;
 let conversationLoadToken = 0;
 let currentStudyContextId = null;
+let difficulty = "standard";
+let socratic = false;
 
 function isAiProcessorErrorMessage(text) {
   return /(?:issue|error|problem) connecting to my ai processor/i.test(String(text || ""));
@@ -220,6 +222,8 @@ async function sendMessage(message = userPrompt.value.trim()) {
         chat_name: currentChatName,
         message: cleanMessage,
         context_id: currentStudyContextId,
+        difficulty,
+        socratic,
       }),
     });
     const data = await response.json().catch(() => ({}));
@@ -265,7 +269,7 @@ userPrompt.addEventListener("input", () => {
   userPrompt.style.height = "auto";
   userPrompt.style.height = `${Math.min(userPrompt.scrollHeight, 150)}px`;
 });
-document.querySelectorAll(".suggestion-card[data-prompt]").forEach((button) => {
+document.querySelectorAll(".quick-card[data-prompt]").forEach((button) => {
   button.addEventListener("click", () => sendMessage(button.dataset.prompt));
 });
 document.querySelector("#newChatBtn").addEventListener("click", () => {
@@ -275,6 +279,53 @@ document.querySelector("#newChatBtn").addEventListener("click", () => {
   clearChat();
   navigate("chatSection");
   refreshHistory();
+});
+
+document.querySelectorAll("[data-difficulty]").forEach((button) => {
+  button.addEventListener("click", () => {
+    difficulty = button.dataset.difficulty;
+    document.querySelectorAll("[data-difficulty]").forEach((item) => {
+      const active = item === button;
+      item.classList.toggle("active", active);
+      item.setAttribute("aria-pressed", String(active));
+    });
+    showToast(`${button.textContent} explanations enabled.`);
+  });
+});
+document.querySelector("#socraticToggle")?.addEventListener("change", (event) => {
+  socratic = event.target.checked;
+  showToast(socratic ? "Socratic mode is on." : "Direct explanations are on.");
+});
+document.querySelector("#conversationCardsBtn")?.addEventListener("click", async () => {
+  navigate("flashcardsSection");
+  output.replaceChildren();
+  const loading = document.createElement("div");
+  loading.className = "empty-deck";
+  loading.innerHTML = "<span>✧</span><strong>Finding what matters…</strong><p>Turning your conversation into active recall cards.</p>";
+  output.append(loading);
+  try {
+    const response = await fetch(`${API_BASE}/flashcards/from-conversation`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_name: currentChatName }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.detail || `Server error (${response.status}).`);
+    flashcards = normalizeFlashcards(data.flashcards);
+    activeCardIndex = 0;
+    renderFlashcards();
+    showToast(`${flashcards.length} flashcards ready to study.`);
+  } catch (error) {
+    output.replaceChildren();
+    const empty = document.createElement("div");
+    empty.className = "empty-deck";
+    empty.innerHTML = "<span>!</span><strong>We couldn’t make that deck yet.</strong>";
+    const detail = document.createElement("p");
+    detail.textContent = error.message || "Ask a few questions first, then try again.";
+    empty.append(detail);
+    output.append(empty);
+    showToast(error.message || "Flashcards weren’t generated.");
+  }
 });
 
 function setSelectedFile(file) {
@@ -389,6 +440,7 @@ function renderStudyNotes() {
   document.querySelector(".deck-toolbar h2").firstChild.textContent = "Study notes ";
   document.querySelector("#deckTotal").textContent = "(notes)";
   document.querySelector("#flashcardCount").textContent = "Notes";
+  document.querySelector("#flashcardCountLarge").textContent = "—";
   document.querySelector("#deckControls").hidden = true;
   document.querySelector("#flipHint").hidden = true;
   const article = document.createElement("article");
@@ -407,6 +459,7 @@ function renderFlashcards() {
   document.querySelector(".deck-toolbar h2").firstChild.textContent = "Study cards ";
   document.querySelector("#deckTotal").textContent = `(${flashcards.length})`;
   document.querySelector("#flashcardCount").textContent = String(flashcards.length);
+  document.querySelector("#flashcardCountLarge").textContent = String(flashcards.length);
   document.querySelector("#deckControls").hidden = flashcards.length < 2;
   document.querySelector("#flipHint").hidden = flashcards.length === 0;
   document.querySelector("#cardCounter").textContent = `${activeCardIndex + 1} / ${flashcards.length}`;
@@ -456,3 +509,12 @@ document.querySelector("#nextCard").addEventListener("click", () => {
 
 refreshHistory();
 loadConversation("default");
+
+document.querySelectorAll("[data-map-topic]").forEach((node) => {
+  node.addEventListener("click", () => {
+    document.querySelectorAll("[data-map-topic]").forEach((item) => item.classList.remove("is-selected"));
+    node.classList.add("is-selected");
+    const caption = document.querySelector("#mapCaption");
+    if (caption) caption.textContent = `${node.dataset.mapTopic} selected · ask a follow-up to expand it.`;
+  });
+});

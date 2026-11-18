@@ -284,7 +284,13 @@ def build_prompt_messages(conversation: dict) -> list[dict]:
     return prompt_messages
 
 
-def process_chat_message(chat_name: str, user_input: str, context_id: str | None = None) -> str:
+def process_chat_message(
+    chat_name: str,
+    user_input: str,
+    context_id: str | None = None,
+    difficulty: str = "standard",
+    socratic: bool = False,
+) -> str:
     """Processes message, maintains state, queries Groq API, and returns reply."""
     if not chat_name:
         chat_name = DEFAULT_CHAT
@@ -310,6 +316,18 @@ def process_chat_message(chat_name: str, user_input: str, context_id: str | None
 
     context = retrieve_context(context_id, user_input)
     prompt_messages = build_prompt_messages(conversation)
+    difficulty_instructions = {
+        "eli5": "Use plain language, short sentences, and a relatable analogy. Define any unavoidable technical term.",
+        "standard": "Give a clear, balanced explanation with enough detail to build real understanding.",
+        "expert": "Assume strong fundamentals. Be precise, technical, and include edge cases or formal reasoning when useful.",
+    }
+    tutor_mode = difficulty_instructions.get(difficulty, difficulty_instructions["standard"])
+    if socratic:
+        tutor_mode += " Use Socratic tutoring: do not reveal the final answer immediately. Ask one focused question or give one useful hint at a time, and celebrate partial reasoning."
+    prompt_messages.insert(1, {
+        "role": "system",
+        "content": f"Tutor mode for this turn: {tutor_mode}",
+    })
     if context["sources"]:
         source_text = "\n\n".join(
             f"[Source section {source['section']}]\n{source['text']}"

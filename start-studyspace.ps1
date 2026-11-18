@@ -49,9 +49,18 @@ if (-not $ready) {
     throw "Quoria API did not become ready. Check server\uvicorn.err.log."
 }
 
-if (Test-Port $FrontendPort) {
-    # Live Server may already own 5500. Use the next local port so the user
-    # always opens the Quoria frontend rather than an unrelated site.
+function Test-QuoriaFrontend([int] $Port) {
+    try {
+        $page = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:$Port/" -TimeoutSec 2
+        return $page.Content -match "Quoria|quoria_logo"
+    } catch {
+        return $false
+    }
+}
+
+if (-not (Test-QuoriaFrontend $FrontendPort)) {
+    # Live Server or another development server may already own 5500. Use the
+    # next local port so the user always opens the Quoria frontend.
     $FrontendPort = 5501
 }
 $SiteUrl = "http://127.0.0.1:$FrontendPort"
