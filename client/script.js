@@ -25,6 +25,11 @@ const output = document.querySelector("#output");
 const chatHistory = document.querySelector("#historyList");
 const uploadPreview = document.querySelector("#uploadPreview");
 const uploadName = document.querySelector("#uploadName");
+const tutorAvatar = document.querySelector("#tutorAvatar");
+const avatarState = document.querySelector("#avatarState");
+const progressRing = document.querySelector("#progressRing");
+const progressValue = document.querySelector("#progressValue");
+const progressLabel = document.querySelector("#progressLabel");
 
 let currentChatName = "default";
 let selectedFile = null;
@@ -47,6 +52,20 @@ function showToast(message) {
   toast.classList.add("visible");
   window.clearTimeout(toastTimer);
   toastTimer = window.setTimeout(() => toast.classList.remove("visible"), 3600);
+}
+
+function setTutorState(state, label) {
+  if (!tutorAvatar) return;
+  tutorAvatar.classList.remove("tutor-avatar-idle", "thinking", "celebrate");
+  tutorAvatar.classList.add(state === "thinking" ? "thinking" : state === "celebrate" ? "celebrate" : "tutor-avatar-idle");
+  if (avatarState && label) avatarState.textContent = label;
+}
+
+function updateLessonProgress(value, label) {
+  const safeValue = Math.max(0, Math.min(100, value));
+  if (progressRing) progressRing.style.background = `conic-gradient(#4f46e5 0 ${safeValue}%, #e0e7ff ${safeValue}% 100%)`;
+  if (progressValue) progressValue.textContent = String(safeValue);
+  if (progressLabel) progressLabel.textContent = label;
 }
 
 function setSidebar(open) {
@@ -208,6 +227,8 @@ async function sendMessage(message = userPrompt.value.trim()) {
   appendMessage(cleanMessage, "user");
   const pending = appendMessage("Tutor is thinking", "assistant");
   pending.row.classList.add("pending");
+  setTutorState("thinking", "Thinking through that…");
+  updateLessonProgress(28, "Building a clearer path.");
   const dots = document.createElement("span");
   dots.className = "typing-dots";
   dots.setAttribute("aria-label", "Loading");
@@ -230,10 +251,14 @@ async function sendMessage(message = userPrompt.value.trim()) {
     if (!response.ok) throw new Error(data.detail || `Server error (${response.status}).`);
     pending.content.textContent = data.response || data.reply || "No response received.";
     pending.row.classList.remove("pending");
+    setTutorState("celebrate", "A new idea just clicked");
+    updateLessonProgress(42, "One more concept connected.");
+    window.setTimeout(() => setTutorState("idle", "Ready for the next question"), 1200);
     userPrompt.value = "";
     userPrompt.style.height = "auto";
   } catch (error) {
     pending.row.classList.remove("pending");
+    setTutorState("idle", "I’m ready to try again");
     const apiUnavailable = error instanceof TypeError;
     pending.content.textContent = IS_FILE_PAGE
       ? "Open Quoria at http://127.0.0.1:5501/ so the browser can connect to the tutor."
@@ -516,5 +541,14 @@ document.querySelectorAll("[data-map-topic]").forEach((node) => {
     node.classList.add("is-selected");
     const caption = document.querySelector("#mapCaption");
     if (caption) caption.textContent = `${node.dataset.mapTopic} selected · ask a follow-up to expand it.`;
+  });
+});
+
+document.querySelectorAll("[data-skill]").forEach((node) => {
+  node.addEventListener("click", () => {
+    document.querySelectorAll("[data-skill]").forEach((item) => item.classList.remove("is-active"));
+    node.classList.add("is-active");
+    setTutorState("idle", `${node.dataset.skill} is in focus`);
+    updateLessonProgress(node.dataset.skill === "Core idea" ? 42 : node.dataset.skill === "Example" ? 64 : 82, `${node.dataset.skill} selected for review.`);
   });
 });

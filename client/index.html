@@ -59,6 +59,15 @@
               </div>
             </div>
 
+            <aside class="lesson-board" aria-label="Live lesson workspace">
+              <div class="board-topline"><span class="eyebrow">LIVE LESSON BOARD</span><span class="board-status"><i></i> ACTIVE</span></div>
+              <div class="tutor-avatar tutor-avatar-idle" id="tutorAvatar" aria-label="Tutor is ready"><span class="avatar-halo"></span><span class="avatar-orb">✦</span><span class="avatar-wave wave-one"></span><span class="avatar-wave wave-two"></span></div>
+              <p class="avatar-state" id="avatarState">Ready when you are</p>
+              <div class="progress-summary"><div class="progress-ring" id="progressRing"><span><strong id="progressValue">24</strong><small>XP</small></span></div><div><strong>Learning momentum</strong><p id="progressLabel">Start a question to build your map.</p></div></div>
+              <div class="skill-tree" aria-label="Lesson concept tree"><div class="skill-line line-left"></div><div class="skill-line line-right"></div><button class="skill-node is-active" type="button" data-skill="Core idea">Core idea</button><button class="skill-node" type="button" data-skill="Example">Example</button><button class="skill-node" type="button" data-skill="Recall">Recall</button></div>
+              <div class="board-note" id="boardNote"><span>✦</span><p><strong>Study cue</strong><br />Ask “why?” to go one layer deeper.</p></div>
+            </aside>
+
             <form class="composer" id="chatForm">
               <div class="upload-preview" id="uploadPreview" hidden><span id="uploadName"></span><button type="button" id="removeUpload" aria-label="Remove file">×</button></div>
               <div class="composer-row"><input type="file" id="fileInput" accept=".pdf,.docx,.txt" hidden /><button class="attach-button" id="fileupload" type="button" aria-label="Attach study material" title="Attach a PDF, DOCX, or TXT">＋</button><textarea id="userPrompt" name="message" rows="1" placeholder="Ask Quoria anything…" aria-label="Message your AI tutor"></textarea><button class="send-button" id="submit" type="submit" aria-label="Send message"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" /></svg></button></div>
